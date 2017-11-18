@@ -4,35 +4,49 @@
 This script prepares Twitter text and attributes for graph-based visualization in Unreal Engine 4 using OpenCL.  Given a twitter dataset with timestamps for each twwet, summary statistics are calculated for each hour of coverage and used to generate output nodes in UE4.  Users can specify data subsets based on a time range of subset of twitter containing search keywords.  Specifically, this script performs the following steps:
 1. Subset an input dataset based on a time range or list of keywords
 2. Calculate the mean and variance of previously dervied numeriously attributes for each tweet, including sentiment, environmental and social dimension scores
-3. Convert variance of derived attributes into [ellipsoid coordinates](https://en.wikipedia.org/wiki/Ellipsoid)
-4. Convert mean sentiment score into color RGB color gradient value based on the following color scheme:
+3. Convert mean sentiment score into color RGB color gradient value based on the following color scheme:
       //todo: insert color scheme
 
 
-5. Output results in struct format used to generate ellipsoid uobjects (one object for each hourly summary statistic set) in UE4.
+4. Output results in struct format used to generate [ellipsoid confidence regions] (https://en.wikipedia.org/wiki/Ellipsoid)  (one ellipsoid for each hourly summary statistic set) in UE4, where the x, y, and z axes corrrespond to time, environmental score, and social score, respectively.  
  
 ![alt text](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/SpherePrototypes.gif "Prototype uobjects in UE4")
 
 
 ### Program Requirements
+Hardware and software used for program development and testing are listed below.  Performance on other configurations may vary
+**OpenCL v. 1.2 or 2.0**
 **Computing Device Types** Designed and optimized for graphics processing units (GPUs) <br>
-**Operating System:** Windows 7 and 10 <br>
-**GPU Computing Devices:** Tested on NVIDIA Titan X Pascal, AMD (insert name), and Intel Iris <br>
+**Operating System:** Windows 7 or 10.  <br>
+**GPU Computing Devices:** NVIDIA Titan X Pascal, AMD (insert name), or Intel Iris <br>
 **Unreal Engine 4 v. 4.18.1** 
 
 
 ### Flowchart 
-Program overview is shown below. Identifying hourly and keyword subsets are performed asynchronously in separate kernels, followed by a sync barrier to ensure completion before progressing to kernels that are dependent on initial kernel results.  After the sync barrier, hourly subsets are processed in parallel.
+Program overview is shown below. Identifying hourly and keyword subsets are performed asynchronously in separate kernels, followed by a sync barrier to ensure completion before progressing to kernels that are dependent on initial kernel results.  After the sync barrier, variable statistics are derived in parallel.
 ![](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/Project%20Flowchart_Nov17_17.png) <br>
 
 **Setup Block 1** - Perform operations needed to read csv file on the device.  Operations include loading and building programs and kernels, calculating buffer size and allocating memory for CSV read, and transferring data from host to device. <br>
 
 **Read CSV** - Kernel operation to read csv file.  Based on the 'Fast C++ CSV Parser' created by Ben Strasser (https://github.com/ben-strasser/fast-cpp-csv-parser). <br>
 
-**Setup Block 2** - Perform operations needed for kernel search operations in Block 2.  Operations include building kernels and allocating buffers.  While these operations could technically be included in setup block 1 with little impact on performance, they're encapsulated in a separate function to improve modularity.
+**Setup Block 2** - Perform operations needed for kernel search operations in Block 2.  Operations include building kernels and allocating buffers.  While these operations could technically be included in setup block 1 with little impact on performance, they're encapsulated in a separate function to improve modularity (e.g. for follow up use with a second keyword search).  
 
-**Identify hourly tweet indeces ** - 
+**Identify hourly tweet indices** - Kernel operation to identify index barriers for each hour of data coverage
 
+**Identify keyword indices** - Kernel operation to identify indices of Tweets that contain the keyword provided as an input argument.
+
+**Calc mean env score/social score/sentiment/time** - Kernel operation to calculate hourly mean of a variable of interest
+
+**Calc var env score/social score/time** - Kernel operation to calculate variance of a variable of interest
+
+**Convert sentiment to rgb** - convert mean sentiment value to rgb tuple using the three color gradient shown above in the summary
+
+**Cleanup** - release created OpenCL objects
+
+**Return data** - return derived variables to the calling program in a format that minimizes time required to generate confidence regions in UE4.  Ojbects in UE4 must be created and modified from the main thread.  
+
+**Additional operations** - All custom functions and corresponding syntax are listed in the supplemental file [OpenCL_SMA_functions] (https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Functions.md).
 
 
 ### Input Data 
