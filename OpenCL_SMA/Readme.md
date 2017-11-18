@@ -9,7 +9,7 @@ This script prepares Twitter text and attributes for graph-based visualization i
       //todo: insert color scheme
 
 
-5. Output results in struct format conducive to creating uobjects (one object for each hourly summary statistic set) in UE4.
+5. Output results in struct format used to generate ellipsoid uobjects (one object for each hourly summary statistic set) in UE4.
  
 ![alt text](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/SpherePrototypes.gif "Prototype uobjects in UE4")
 
@@ -18,12 +18,22 @@ This script prepares Twitter text and attributes for graph-based visualization i
 **Computing Device Types** Designed and optimized for graphics processing units (GPUs) <br>
 **Operating System:** Windows 7 and 10 <br>
 **GPU Computing Devices:** Tested on NVIDIA Titan X Pascal, AMD (insert name), and Intel Iris <br>
-**Unreal Engine 4 v. 4.17.1** 
+**Unreal Engine 4 v. 4.18.1** 
 
 
 ### Flowchart 
 Program overview is shown below. Identifying hourly and keyword subsets are performed asynchronously in separate kernels, followed by a sync barrier to ensure completion before progressing to kernels that are dependent on initial kernel results.  After the sync barrier, hourly subsets are processed in parallel.
-![build status](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/Project%20Overview.png) <br>
+![](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/Project%20Flowchart_Nov17_17.png) <br>
+
+**Setup Block 1** - Perform operations needed to read csv file on the device.  Operations include loading and building programs and kernels, calculating buffer size and allocating memory for CSV read, and transferring data from host to device. <br>
+
+**Read CSV** - Kernel operation to read csv file.  Based on the 'Fast C++ CSV Parser' created by Ben Strasser (https://github.com/ben-strasser/fast-cpp-csv-parser). <br>
+
+**Setup Block 2** - Perform operations needed for kernel search operations in Block 2.  Operations include building kernels and allocating buffers.  While these operations could technically be included in setup block 1 with little impact on performance, they're encapsulated in a separate function to improve modularity.
+
+**Identify hourly tweet indeces ** - 
+
+
 
 ### Input Data 
 Data is stored .csv format.  Example data is provided in Supplemental Files.  Attributes include:<br>
