@@ -1,13 +1,13 @@
 ## Preprocesssing Twitter Posts for Graph Analytics in Unreal Engine 4 (UE4) <br>
 
 ### Summary
-This script prepares Twitter text and attributes for graph-based visualization in Unreal Engine 4 using OpenCL.  Given a twitter dataset with timestamps for each twwet, summary statistics are calculated for each hour of coverage and used to generate output nodes in UE4.  Users can specify data subsets based on a time range of subset of twitter containing search keywords.  Specifically, this script performs the following steps:
-1. Subset an input dataset based on a time range or list of keywords
-2. Calculate the mean and variance of previously dervied numeriously attributes for each tweet, including sentiment, environmental and social dimension scores
-3. Convert mean sentiment score into color RGB color gradient value based on the following color scheme: <br>
+This script prepares Twitter text and attributes for graph-based visualization in Unreal Engine 4 using OpenCL.  Given a twitter dataset with timestamps for each tweet, summary statistics are calculated for each hour of coverage and used to generate output nodes in UE4.  Users can specify data subsets based on a time range of subset of twitter containing search keywords.  Specifically, this script performs the following steps:
+1. Subset an input dataset based on a time range and list of keywords
+2. Calculate the mean and variance of variables for each hour of Tweets, including sentiment, environmental and social dimension scores
+3. Convert mean sentiment score into color RGB color gradient tuple based on the following color scheme: <br>
 ![](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/Sentiment_Color_Gradient-03.png)
 
-4. Output results in struct format used to generate [ellipsoid confidence regions](https://en.wikipedia.org/wiki/Ellipsoid)  (one ellipsoid for each hourly summary statistic set) in UE4, where the x, y, and z axes corrrespond to time, environmental score, and social score, respectively.  
+4. Return results to calling UE4 thread, which will use the results to generate ellipsoid 95% confidence regions [ellipsoid confidence regions](https://en.wikipedia.org/wiki/Ellipsoid)  (one ellipsoid for each hour of Tweets), where the x, y, and z axes of the ellipsoid corrrespond to time, environmental score, and social score, respectively.  
  
 ![alt text](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/SpherePrototypes.gif "Prototype uobjects in UE4")
 
@@ -22,7 +22,7 @@ Hardware and software used for program development and testing are listed below.
 
 
 ### Flowchart 
-Program overview is shown below. Identifying hourly and keyword subsets are performed asynchronously in separate kernels, followed by a sync barrier to ensure completion before progressing to kernels that are dependent on initial kernel results.  After the sync barrier, variable statistics are derived in parallel.
+Program overview is shown below. Identifying hourly and keyword subsets are performed asynchronously in separate kernels, followed by a sync barrier to ensure completion before progressing to kernels that are dependent on initial kernel results.  After the second sync barrier, variable statistics are derived in parallel.
 ![](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/Project%20Flowchart_Nov17_17.png) <br>
 
 **Setup Block 1** - Perform operations needed to read csv file on the device.  Operations include loading and building programs and kernels, calculating buffer size and allocating memory for CSV read, and transferring data from host to device. <br>
@@ -47,8 +47,15 @@ Program overview is shown below. Identifying hourly and keyword subsets are perf
 
 **Additional operations** - All custom functions and corresponding syntax are listed in the supplemental file [OpenCL_SMA_functions](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Functions.md)
 
+### Program Files
+Program code consists of four files:
+1. OpenCL_SMA.cpp - Contains the majority of host code and handles program flow.
+2. OpenCL_SMA_kernels.cl - Contains device kernels.
+3. Support_SMA.cpp - debug and support functions, including identifying platform and device characteristics and choosing optimal options
+4. Test_Driver.cpp - simulates the Unreal Engine 4 calling function.  
+
 ### Program Testing and Validation
-Test harness and corresponding dataset are available in the Proram Testing folder.  Testing strategy is based on additively evaluating programs by block.  For example, at the conclusion of block 2 the test harness for both block 1 and 2 are run to ensure edits made after  block 1 verification did not change block 1 code validity.  
+Test harness and corresponding dataset are available in the [Testing Strategy](https://github.com/larkinandy/Green-Space-Virtual-Reality/tree/master/OpenCL_SMA/Testing_Strategy) folder.  Testing strategy is based on testing functions independnetly during code creaation, followed by integrative and iterative testing at the end of each code block.  For example, at the conclusion of block 2 the test harness for both block 1 and 2 are run to ensure edits made after  block 1 verification did not change block 1 code validity.  
 
 ### Version Control
 SourceTree was used for version control with a .git repository.  Committs were performed on a daily basis, and tags were added after reaching each milestone (code block validation).  
