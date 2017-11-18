@@ -47,8 +47,15 @@ Program overview is shown below. Identifying hourly and keyword subsets are perf
 
 **Additional operations** - All custom functions and corresponding syntax are listed in the supplemental file [OpenCL_SMA_functions](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Functions.md)
 
+### Program Files
+Program code consists of four files:
+1. OpenCL_SMA.cpp - Contains the majority of host code and handles program flow.
+2. OpenCL_SMA_kernels.cl - Contains device kernels.
+3. Support_SMA.cpp - debug and support functions, including identifying platform and device characteristics and choosing optimal options
+4. Test_Driver.cpp - simulates the Unreal Engine 4 calling function.  
+
 ### Program Testing and Validation
-Test harness and corresponding dataset are available in the Proram Testing folder.  Testing strategy is based on additively evaluating programs by block.  For example, at the conclusion of block 2 the test harness for both block 1 and 2 are run to ensure edits made after  block 1 verification did not change block 1 code validity.  
+Test harness and corresponding dataset are available in the [Testing Strategy](https://github.com/larkinandy/Green-Space-Virtual-Reality/tree/master/OpenCL_SMA/Testing_Strategy) folder.  Testing strategy is based on testing functions independnetly during code creaation, followed by integrative and iterative testing at the end of each code block.  For example, at the conclusion of block 2 the test harness for both block 1 and 2 are run to ensure edits made after  block 1 verification did not change block 1 code validity.  
 
 ### Version Control
 SourceTree was used for version control with a .git repository.  Committs were performed on a daily basis, and tags were added after reaching each milestone (code block validation).  
