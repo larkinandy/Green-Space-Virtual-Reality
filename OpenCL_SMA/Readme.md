@@ -4,21 +4,20 @@
 This script prepares Twitter text and attributes for graph-based visualization in Unreal Engine 4 using OpenCL.  Given a twitter dataset with timestamps for each twwet, summary statistics are calculated for each hour of coverage and used to generate output nodes in UE4.  Users can specify data subsets based on a time range of subset of twitter containing search keywords.  Specifically, this script performs the following steps:
 1. Subset an input dataset based on a time range or list of keywords
 2. Calculate the mean and variance of previously dervied numeriously attributes for each tweet, including sentiment, environmental and social dimension scores
-3. Convert mean sentiment score into color RGB color gradient value based on the following color scheme:
-      //todo: insert color scheme
+3. Convert mean sentiment score into color RGB color gradient value based on the following color scheme: <br>
+![](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/Sentiment_Color_Gradient-03.png)
 
-
-4. Output results in struct format used to generate [ellipsoid confidence regions] (https://en.wikipedia.org/wiki/Ellipsoid)  (one ellipsoid for each hourly summary statistic set) in UE4, where the x, y, and z axes corrrespond to time, environmental score, and social score, respectively.  
+4. Output results in struct format used to generate [ellipsoid confidence regions](https://en.wikipedia.org/wiki/Ellipsoid)  (one ellipsoid for each hourly summary statistic set) in UE4, where the x, y, and z axes corrrespond to time, environmental score, and social score, respectively.  
  
 ![alt text](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/SpherePrototypes.gif "Prototype uobjects in UE4")
 
 
 ### Program Requirements
-Hardware and software used for program development and testing are listed below.  Performance on other configurations may vary
-**OpenCL v. 1.2 or 2.0**
+Hardware and software used for program development and testing are listed below.  Performance on other configurations may vary <br>
+**OpenCL v. 1.2 and 2.0** <br>
 **Computing Device Types** Designed and optimized for graphics processing units (GPUs) <br>
-**Operating System:** Windows 7 or 10.  <br>
-**GPU Computing Devices:** NVIDIA Titan X Pascal, AMD (insert name), or Intel Iris <br>
+**Operating System:** Windows 7 and 10.  <br>
+**GPU Computing Devices:** NVIDIA Titan X Pascal, NVIDIA GTX 980M, AMD FirePro V4900, and Intel Iris (//todo: insert version) <br>
 **Unreal Engine 4 v. 4.18.1** 
 
 
@@ -40,14 +39,19 @@ Program overview is shown below. Identifying hourly and keyword subsets are perf
 
 **Calc var env score/social score/time** - Kernel operation to calculate variance of a variable of interest
 
-**Convert sentiment to rgb** - convert mean sentiment value to rgb tuple using the three color gradient shown above in the summary
+**Convert sentiment to rgb** - Convert mean sentiment value to rgb tuple using the three color gradient shown above in the summary
 
-**Cleanup** - release created OpenCL objects
+**Cleanup** - Release created OpenCL objects
 
-**Return data** - return derived variables to the calling program in a format that minimizes time required to generate confidence regions in UE4.  Ojbects in UE4 must be created and modified from the main thread.  
+**Return data** - Return derived variables to the calling program in a format that minimizes time required to generate confidence regions in UE4.  Ojbects in UE4 must be created and modified from the main thread.  
 
-**Additional operations** - All custom functions and corresponding syntax are listed in the supplemental file [OpenCL_SMA_functions] (https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Functions.md).
+**Additional operations** - All custom functions and corresponding syntax are listed in the supplemental file [OpenCL_SMA_functions](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Functions.md)
 
+### Program Testing and Validation
+Test harness and corresponding dataset are available in the Proram Testing folder.  Testing strategy is based on additively evaluating programs by block.  For example, at the conclusion of block 2 the test harness for both block 1 and 2 are run to ensure edits made after  block 1 verification did not change block 1 code validity.  
+
+### Version Control
+SourceTree was used for version control with a .git repository.  Committs were performed on a daily basis, and tags were added after reaching each milestone (code block validation).  
 
 ### Input Data 
 Data is stored .csv format.  Example data is provided in Supplemental Files.  Attributes include:<br>
