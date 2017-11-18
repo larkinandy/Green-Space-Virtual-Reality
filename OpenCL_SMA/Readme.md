@@ -10,7 +10,9 @@ This script prepares Twitter text and attributes for graph-based visualization i
 
 
 5. Output results in struct format conducive to creating uobjects (one object for each hourly summary statistic set) in UE4.
-//todo: insert image of constrcuted nodes 
+ 
+![alt text](https://github.com/larkinandy/Green-Space-Virtual-Reality/blob/master/OpenCL_SMA/Support%20Documents/SpherePrototypes.gif "Prototype uobjects in UE4")
+
 
 ### Program Requirements
 **Computing Device Types** Designed and optimized for graphics processing units (GPUs) <br>
