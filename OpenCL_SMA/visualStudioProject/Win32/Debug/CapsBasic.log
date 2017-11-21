@@ -1,0 +1,9 @@
+﻿  OpenCL_SMA.cpp
+OpenCL_SMA.cpp(66): warning C4101: 'maxComputeUnits': unreferenced local variable
+OpenCL_SMA.cpp(230): warning C4018: '<': signed/unsigned mismatch
+OpenCL_SMA.cpp(259): warning C4018: '<': signed/unsigned mismatch
+OpenCL_SMA.cpp(272): warning C4018: '<': signed/unsigned mismatch
+OpenCL_SMA.cpp(275): warning C4996: 'clCreateCommandQueue': was declared deprecated
+  C:\Intel\OpenCL\sdk\include\CL/cl.h(1428): note: see declaration of 'clCreateCommandQueue'
+OpenCL_SMA.cpp(348): warning C4101: 'errNum': unreferenced local variable
+  CapsBasic.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe

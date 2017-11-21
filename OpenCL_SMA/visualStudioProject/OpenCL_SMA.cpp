@@ -31,6 +31,15 @@ int SMA_Analyzer::getNumObs()
 	return numObs;
 }
 
+SMA_Analyzer::~SMA_Analyzer() 
+{
+	// free memory
+	free(platformIDs);
+	free(deviceIDs);
+	free(subBufferAvgs);
+
+}
+
 
 // Function to check and handle OpenCL errors
 void SMA_Analyzer::checkErr(cl_int err, const char * name)
@@ -41,15 +50,20 @@ void SMA_Analyzer::checkErr(cl_int err, const char * name)
 	}
 }
 
+
+
+
 // identify platforms and choose first platform on list
-void SMA_Analyzer::setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatforms, int platform)
+void SMA_Analyzer::setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatforms)
 {
 	errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
 	checkErr(
 		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
 
-	*platformIDs = (cl_platform_id *)malloc(sizeof(cl_platform_id) * 2);
+	*platformIDs = (cl_platform_id *)malloc(sizeof(cl_platform_id)*numPlatforms );
+
+	int maxComputeUnits;
 	
 	if (debug) { std::cout << "Number of platforms: \t" << numPlatforms << std::endl; 
 	}
@@ -58,39 +72,57 @@ void SMA_Analyzer::setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatf
 		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
 
-	if (debug) { DisplayPlatformInfo( *platformIDs[platform], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
+	//if (debug) { DisplayPlatformInfo( *platformIDs[0], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
+
+	// for each platform get number of devices and print # of compute units for each device
+	for (unsigned int platformNum = 0; platformNum < numPlatforms; platformNum++)
+	{
+		if (debug) { DisplayPlatformInfo((*platformIDs)[platformNum], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
+		cl_uint numDevices;
+		errNum = clGetDeviceIDs((*platformIDs)[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+
+
+		cl_device_id *deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
+		if (numDevices > 0) {
+			errNum = clGetDeviceIDs(
+				(*platformIDs)[platformNum],
+				CL_DEVICE_TYPE_GPU,
+				numDevices,
+				deviceIDs,
+				NULL);
+			checkErr(errNum, "clGetDeviceIDs");
+			for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++) {
+				size_t maxComputeUnits = 0;
+				size_t size;
+				std::cout << numDevices << std::endl;
+				errNum = clGetDeviceInfo(deviceIDs[deviceIndex], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_uint), &maxComputeUnits, &size);
+				std::cout << " maxComputeUnits: " << maxComputeUnits << std::endl;
+				InfoDevice<cl_device_type>::display(deviceIDs[deviceIndex], CL_DEVICE_TYPE, "CL_DEVICE_TYPE");
+			}
+		}
+	}
 }
 
 // identify devices and choose first OpenCL compatible device on list
 void SMA_Analyzer::setupDevices(cl_platform_id * platformIDs, cl_device_id ** deviceIDs, int platform, cl_uint * numDevices) 
 {
-	cl_int errNum;
-	errNum = clGetDeviceIDs(
-		platformIDs[platform],
-		CL_DEVICE_TYPE_ALL,
-		0,
-		NULL,
-		numDevices);
-	if (errNum != CL_SUCCESS && errNum != CL_DEVICE_NOT_FOUND)
-	{
+	errNum = clGetDeviceIDs(platformIDs[platform],CL_DEVICE_TYPE_ALL,0,NULL,numDevices);
+
+	if (errNum != CL_SUCCESS && errNum != CL_DEVICE_NOT_FOUND) { checkErr(errNum, "clGetDeviceIDs"); }
+
+
+	for (unsigned int deviceIndex = 0; deviceIndex < *numDevices; deviceIndex++) {
+		*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * *numDevices);
+		errNum = clGetDeviceIDs(
+			platformIDs[platform],
+			CL_DEVICE_TYPE_ALL,
+			*numDevices,
+			deviceIDs[0],
+			NULL);
 		checkErr(errNum, "clGetDeviceIDs");
+
+		InfoDevice<cl_device_type>::display(*deviceIDs[0],CL_DEVICE_TYPE,"CL_DEVICE_TYPE");
 	}
-
-	*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * *numDevices);
-	errNum = clGetDeviceIDs(
-		platformIDs[platform],
-		CL_DEVICE_TYPE_ALL,
-		*numDevices,
-		deviceIDs[0],
-		NULL);
-	checkErr(errNum, "clGetDeviceIDs");
-
-
-	InfoDevice<cl_device_type>::display(
-		*deviceIDs[0],
-		CL_DEVICE_TYPE,
-		"CL_DEVICE_TYPE");
-
 }
 
 // create context and attach selected devices
@@ -331,18 +363,7 @@ void SMA_Analyzer::copyDataToHost(std::vector<cl_command_queue> * queues, std::v
 // main function.  For each four sequential elements in an array, compute the average (mean) value using an OpenCL kernel
 void SMA_Analyzer::getAverage(int numElements, int * inputData) 
 {
-	// setup opencl objects and variables
-	cl_int errNum;
-	cl_uint numPlatforms = NULL;
-	cl_uint numDevices;
-	cl_platform_id * platformIDs = NULL;
-	cl_device_id * deviceIDs = NULL;
-	cl_context context = NULL;
-	cl_program program;
-	std::vector<cl_kernel> kernels;
-	std::vector<cl_command_queue> queues;
-	std::vector<cl_mem> buffers;
-	std::vector<cl_event> events;
+	
 
 	// for measuring the elapsed time to completion
 	typedef std::chrono::high_resolution_clock Clock;
@@ -352,10 +373,10 @@ void SMA_Analyzer::getAverage(int numElements, int * inputData)
 	// setup other objects and variables
 	const int NUM_ELEMENTS_PER_BUFFER = 4;
 	const int numBuffers = numElements / NUM_ELEMENTS_PER_BUFFER;
-	float * subBufferAvgs = (float *)malloc(sizeof(float) * numBuffers);
+	
 
 	// Setup 
-	setupPlatform(&platformIDs, numPlatforms,0);
+	setupPlatform(&platformIDs, numPlatforms);
 	setupDevices(platformIDs, &deviceIDs, 0, &numDevices);
 	setupContext(platformIDs, &context, deviceIDs, 0, 1);
 	createProgram(&program, context, 1, deviceIDs);
@@ -373,11 +394,6 @@ void SMA_Analyzer::getAverage(int numElements, int * inputData)
 	// Get results and print
 	copyDataToHost(&queues, &buffers, numBuffers , subBufferAvgs);
 	printOutput(numDevices, subBufferAvgs, numBuffers);
-
-	// free memory
-	free(platformIDs);
-	free(deviceIDs);
-	free(subBufferAvgs);
 
 	//measure elapsed time
 	Clock::time_point t1 = Clock::now();

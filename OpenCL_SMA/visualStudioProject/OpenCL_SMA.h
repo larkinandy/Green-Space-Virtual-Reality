@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -18,6 +16,7 @@ class SMA_Analyzer
 public:
 	SMA_Analyzer(char *inputFilepath, int numObs);
 	SMA_Analyzer();
+	~SMA_Analyzer();
 	void getAverage(int numElements, int * inputData);
 	void createInput(int ** inputOutput, int numBufferElements);
 	void setFilepath(char * filepath);
@@ -33,10 +32,24 @@ private:
 	const char * KERNEL_FILE = "Larkin_module12.cl";
 	const bool debug = true;
 
+	// setup opencl objects and variables;
+	cl_uint numPlatforms = NULL;
+	cl_uint numDevices;
+	cl_platform_id * platformIDs = NULL;
+	cl_device_id * deviceIDs = NULL;
+	cl_context context = NULL;
+	cl_program program;
+	std::vector<cl_kernel> kernels;
+	std::vector<cl_command_queue> queues;
+	std::vector<cl_mem> buffers;
+	std::vector<cl_event> events;
+
+	float * subBufferAvgs = (float *)malloc(sizeof(float) * 4);
+
 
 
 	void checkErr(cl_int err, const char * name);
-	void setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatforms, int platform);
+	void setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatforms);
 	void setupDevices(cl_platform_id * platformIDs, cl_device_id ** deviceIDs, int platform, cl_uint * numDevices);
 	void setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, int platform, cl_uint numDevices);
 	void createProgram(cl_program * program, cl_context context, cl_int numDevices, cl_device_id * deviceIDs);
