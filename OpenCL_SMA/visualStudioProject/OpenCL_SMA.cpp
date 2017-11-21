@@ -40,6 +40,15 @@ SMA_Analyzer::~SMA_Analyzer()
 
 }
 
+int SMA_Analyzer::getSelectedPlatform() 
+{
+	return this->selectedPlatform;
+}
+int SMA_Analyzer::getSelectedDevice() 
+{
+	return this->selectedDevice;
+}
+
 
 // Function to check and handle OpenCL errors
 void SMA_Analyzer::checkErr(cl_int err, const char * name)
@@ -54,68 +63,98 @@ void SMA_Analyzer::checkErr(cl_int err, const char * name)
 
 
 // identify platforms and choose first platform on list
-void SMA_Analyzer::setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatforms)
+void SMA_Analyzer::getPlatformInfo(cl_platform_id ** platformIDs, cl_uint * numPlatforms, int selectedPlatform, int selectedDevice)
 {
-	errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
+	errNum = clGetPlatformIDs(0, NULL, numPlatforms);
 	checkErr(
 		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
 
-	*platformIDs = (cl_platform_id *)malloc(sizeof(cl_platform_id)*numPlatforms );
+	*platformIDs = (cl_platform_id *)malloc(sizeof(cl_platform_id)* *numPlatforms);
 
 	int maxComputeUnits;
-	
-	if (debug) { std::cout << "Number of platforms: \t" << numPlatforms << std::endl; 
-	}
-	errNum = clGetPlatformIDs(numPlatforms, *platformIDs, NULL);
+
+	if (debug) { std::cout << "Number of platforms: \t" << numPlatforms << std::endl; }
+	errNum = clGetPlatformIDs(*numPlatforms, *platformIDs, NULL);
 	checkErr(
-		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
+		(errNum != CL_SUCCESS) ? errNum : (*numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
 
-	//if (debug) { DisplayPlatformInfo( *platformIDs[0], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
-
-	// for each platform get number of devices and print # of compute units for each device
-	for (unsigned int platformNum = 0; platformNum < numPlatforms; platformNum++)
-	{
-		if (debug) { DisplayPlatformInfo((*platformIDs)[platformNum], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
-		cl_uint numDevices;
-		errNum = clGetDeviceIDs((*platformIDs)[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
-
-
-		cl_device_id *deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
-		if (numDevices > 0) {
-			errNum = clGetDeviceIDs(
-				(*platformIDs)[platformNum],
-				CL_DEVICE_TYPE_GPU,
-				numDevices,
-				deviceIDs,
-				NULL);
-			checkErr(errNum, "clGetDeviceIDs");
-			for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++) {
-				size_t maxComputeUnits = 0;
-				size_t size;
-				std::cout << numDevices << std::endl;
-				errNum = clGetDeviceInfo(deviceIDs[deviceIndex], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_uint), &maxComputeUnits, &size);
-				std::cout << " maxComputeUnits: " << maxComputeUnits << std::endl;
-				InfoDevice<cl_device_type>::display(deviceIDs[deviceIndex], CL_DEVICE_TYPE, "CL_DEVICE_TYPE");
-			}
-		}
-	}
 }
 
-// identify devices and choose first OpenCL compatible device on list
-void SMA_Analyzer::setupDevices(cl_platform_id * platformIDs, cl_device_id ** deviceIDs, int platform, cl_uint * numDevices) 
+void SMA_Analyzer::getBestDeviceOnPlatform(cl_platform_id ** platformIDs, int platformNum, 
+	unsigned int * maxCompute, int *selectedPlatform, int * selectedDevice) 
 {
-	errNum = clGetDeviceIDs(platformIDs[platform],CL_DEVICE_TYPE_ALL,0,NULL,numDevices);
+	cl_uint numDevices;
+	errNum = clGetDeviceIDs((*platformIDs)[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+	cl_device_id *tempDeivceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
+	std::cout << "num devices" << numDevices << std::endl;
+	if (numDevices > 0) {
+		errNum = clGetDeviceIDs(
+			(*platformIDs)[platformNum],
+			CL_DEVICE_TYPE_GPU,
+			numDevices,
+			tempDeivceIDs,
+			NULL);
+		checkErr(errNum, "clGetDeviceIDs");
+		for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
+		{
+			cl_uint maxComputeNewDevice = 0;
+			size_t size;
+			errNum = clGetDeviceInfo(tempDeivceIDs[deviceIndex], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &maxComputeNewDevice, &size);
+			std::cout << "max compute val" << maxComputeNewDevice << std::endl;
+			if (maxComputeNewDevice > *maxCompute)
+			{
+				std::cout << "new best device found " << std::endl;
+				*selectedPlatform = platformNum;
+				*selectedDevice = deviceIndex;
+				*maxCompute = maxComputeNewDevice;
+			}
+			std::cout << " maxComputeUnits: " << maxComputeNewDevice << std::endl;
+			InfoDevice<cl_device_type>::display(tempDeivceIDs[deviceIndex], CL_DEVICE_TYPE, "CL_DEVICE_TYPE");
+		}
+	}
+	free(tempDeivceIDs);
+}
+
+
+// identify devices and choose first OpenCL compatible device on list
+int SMA_Analyzer::selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs, 
+	int * selectedPlatform, int * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms)
+{
+	unsigned int maxCompute = 0;
+	std::cout << "num platforms: " << numPlatforms << std::endl;
+	for (unsigned int platformNum = 0; platformNum < numPlatforms; platformNum++)
+	{
+		//if (debug) { DisplayPlatformInfo((*platformIDs)[platformNum], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
+		getBestDeviceOnPlatform(&platformIDs, platformNum, &maxCompute, selectedPlatform, selectedDevice);
+	}
+	if (maxCompute == 0)
+	{
+		std::cout << " Error, no OpenCL compatible GPU device found " << std::endl;
+		return 0;
+	}
+
+	std::cout << "selected platform: " << *selectedPlatform << std::endl;
+	std::cout << "selected device: " << *selectedDevice << std::endl;
+
+
+
+	
+	errNum = clGetDeviceIDs(platformIDs[0],CL_DEVICE_TYPE_ALL,0,NULL,numDevices);
+
+
+
 
 	if (errNum != CL_SUCCESS && errNum != CL_DEVICE_NOT_FOUND) { checkErr(errNum, "clGetDeviceIDs"); }
+	*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * *numDevices);
 
-
-	for (unsigned int deviceIndex = 0; deviceIndex < *numDevices; deviceIndex++) {
-		*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * *numDevices);
+	for (unsigned int deviceIndex = 0; deviceIndex < *numDevices; deviceIndex++) 
+	{
+		
 		errNum = clGetDeviceIDs(
-			platformIDs[platform],
-			CL_DEVICE_TYPE_ALL,
+			platformIDs[0],
+			CL_DEVICE_TYPE_GPU,
 			*numDevices,
 			deviceIDs[0],
 			NULL);
@@ -376,8 +415,9 @@ void SMA_Analyzer::getAverage(int numElements, int * inputData)
 	
 
 	// Setup 
-	setupPlatform(&platformIDs, numPlatforms);
-	setupDevices(platformIDs, &deviceIDs, 0, &numDevices);
+	getPlatformInfo(&platformIDs, &numPlatforms, selectedPlatform, selectedDevice);
+	selectOptimalDevice(platformIDs, &deviceIDs,
+		&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
 	setupContext(platformIDs, &context, deviceIDs, 0, 1);
 	createProgram(&program, context, 1, deviceIDs);
 	createBuffers(&inputData, numBuffers, context, &buffers, NUM_ELEMENTS_PER_BUFFER);

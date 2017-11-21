@@ -23,17 +23,21 @@ public:
 	void setNumobs(int numObs);
 	char * getFilepath();
 	int getNumObs();
+	int getSelectedPlatform();
+	int getSelectedDevice();
 protected:
 
 private:
-	cl_int errNum;
 	char * inputFilepath;
 	int numObs;
 	const char * KERNEL_FILE = "Larkin_module12.cl";
 	const bool debug = true;
+	int selectedPlatform = -1;
+	int selectedDevice = -1;
 
 	// setup opencl objects and variables;
-	cl_uint numPlatforms = NULL;
+	cl_int errNum;
+	cl_uint numPlatforms = 0;
 	cl_uint numDevices;
 	cl_platform_id * platformIDs = NULL;
 	cl_device_id * deviceIDs = NULL;
@@ -47,10 +51,12 @@ private:
 	float * subBufferAvgs = (float *)malloc(sizeof(float) * 4);
 
 
-
 	void checkErr(cl_int err, const char * name);
-	void setupPlatform(cl_platform_id ** platformIDs, cl_uint numPlatforms);
-	void setupDevices(cl_platform_id * platformIDs, cl_device_id ** deviceIDs, int platform, cl_uint * numDevices);
+	void getPlatformInfo(cl_platform_id ** platformIDs, cl_uint * numPlatforms, int selectedPlatform, int selectedDevice);
+	void getBestDeviceOnPlatform(cl_platform_id ** platformIDs, int platformNum,
+		unsigned int * maxCompute, int *selectedPlatform, int * selectedDevice);
+	int selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
+		int * selectedPlatform, int * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms);
 	void setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, int platform, cl_uint numDevices);
 	void createProgram(cl_program * program, cl_context context, cl_int numDevices, cl_device_id * deviceIDs);
 	void printOutput(int numDevices, float * results, int numElements);
