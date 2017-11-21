@@ -8,5 +8,6 @@
 #include <vector>
 #include<chrono>
 
-#include "info.hpp"
 #include <CL/cl.h>
+
+

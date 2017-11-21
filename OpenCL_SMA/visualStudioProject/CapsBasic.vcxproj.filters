@@ -27,12 +27,33 @@
     <ClInclude Include="testDriver.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ContextManager.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CSV_Parser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Average.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OpenCL_SMA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="testDriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContextManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CSV_Parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Average.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Devce_Base_Class.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
