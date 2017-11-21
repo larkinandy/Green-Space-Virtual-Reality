@@ -1,13 +1,13 @@
 ﻿  OpenCL_SMA.cpp
 OpenCL_SMA.cpp(75): warning C4101: 'maxComputeUnits': unreferenced local variable
-OpenCL_SMA.cpp(269): warning C4018: '<': signed/unsigned mismatch
-OpenCL_SMA.cpp(298): warning C4018: '<': signed/unsigned mismatch
-OpenCL_SMA.cpp(311): warning C4018: '<': signed/unsigned mismatch
-OpenCL_SMA.cpp(314): warning C4996: 'clCreateCommandQueue': was declared deprecated
+OpenCL_SMA.cpp(151): warning C4101: 'maxDimensions': unreferenced local variable
+OpenCL_SMA.cpp(180): warning C4101: 'maxComputeNewDevice': unreferenced local variable
+OpenCL_SMA.cpp(179): warning C4101: 'size': unreferenced local variable
+OpenCL_SMA.cpp(273): warning C4018: '<': signed/unsigned mismatch
+OpenCL_SMA.cpp(302): warning C4018: '<': signed/unsigned mismatch
+OpenCL_SMA.cpp(315): warning C4018: '<': signed/unsigned mismatch
+OpenCL_SMA.cpp(318): warning C4996: 'clCreateCommandQueue': was declared deprecated
   C:\Intel\OpenCL\sdk\include\CL/cl.h(1428): note: see declaration of 'clCreateCommandQueue'
-OpenCL_SMA.cpp(387): warning C4101: 'errNum': unreferenced local variable
-  Generating Code...
-i:\greenspacevirtualreality\opencl_sma\visualstudioproject\opencl_sma.cpp(165): warning C4715: 'SMA_Analyzer::selectOptimalDevice': not all control paths return a value
-  Skipping... (no relevant changes detected)
-  testDriver.cpp
-  CapsBasic.vcxproj -> I:\GreenSpaceVirtualReality\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe
+OpenCL_SMA.cpp(391): warning C4101: 'errNum': unreferenced local variable
+d:\virturalrealitygreenspace\opencl_sma\visualstudioproject\opencl_sma.cpp(145): warning C4715: 'SMA_Analyzer::selectOptimalDevice': not all control paths return a value
+  CapsBasic.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe

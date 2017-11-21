@@ -32,8 +32,9 @@ private:
 	int numObs;
 	const char * KERNEL_FILE = "Larkin_module12.cl";
 	const bool debug = true;
-	int selectedPlatform = -1;
-	int selectedDevice = -1;
+	const bool debug_block1 = true;
+	cl_int selectedPlatform = -1;
+	cl_int selectedDevice = -1;
 
 	// setup opencl objects and variables;
 	cl_int errNum;
@@ -57,7 +58,7 @@ private:
 		unsigned int * maxCompute, int *selectedPlatform, int * selectedDevice);
 	int selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
 		int * selectedPlatform, int * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms);
-	void setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, int platform, cl_uint numDevices);
+	void setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, cl_uint platform, cl_uint numDevices);
 	void createProgram(cl_program * program, cl_context context, cl_int numDevices, cl_device_id * deviceIDs);
 	void printOutput(int numDevices, float * results, int numElements);
 	void createBuffers(int ** inputOutput, int numBuffers, cl_context context, std::vector<cl_mem> * buffers, int numElementsPerBuffer);
@@ -67,6 +68,6 @@ private:
 	void copyDataToBuffer(std::vector<cl_command_queue> * queues, std::vector<cl_mem> * buffers, int * inputOutput, int numElements);
 	void callKernels(std::vector<cl_command_queue> * queues, std::vector<cl_kernel> * kernels, std::vector<cl_event> * events, int numBufferElements);
 	void copyDataToHost(std::vector<cl_command_queue> * queues, std::vector<cl_mem> * buffers, cl_uint numBuffers, float * outputVals);
-	
+	void printDeviceInfo(cl_device_id deviceIDs);
 
 };

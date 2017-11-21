@@ -74,7 +74,6 @@ void SMA_Analyzer::getPlatformInfo(cl_platform_id ** platformIDs, cl_uint * numP
 
 	int maxComputeUnits;
 
-	if (debug) { std::cout << "Number of platforms: \t" << numPlatforms << std::endl; }
 	errNum = clGetPlatformIDs(*numPlatforms, *platformIDs, NULL);
 	checkErr(
 		(errNum != CL_SUCCESS) ? errNum : (*numPlatforms <= 0 ? -1 : CL_SUCCESS),
@@ -88,7 +87,6 @@ void SMA_Analyzer::getBestDeviceOnPlatform(cl_platform_id ** platformIDs, int pl
 	cl_uint numDevices;
 	errNum = clGetDeviceIDs((*platformIDs)[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
 	cl_device_id *tempDeivceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
-	std::cout << "num devices" << numDevices << std::endl;
 	if (numDevices > 0) {
 		errNum = clGetDeviceIDs(
 			(*platformIDs)[platformNum],
@@ -97,21 +95,18 @@ void SMA_Analyzer::getBestDeviceOnPlatform(cl_platform_id ** platformIDs, int pl
 			tempDeivceIDs,
 			NULL);
 		checkErr(errNum, "clGetDeviceIDs");
+
 		for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
 		{
 			cl_uint maxComputeNewDevice = 0;
 			size_t size;
-			errNum = clGetDeviceInfo(tempDeivceIDs[deviceIndex], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &maxComputeNewDevice, &size);
-			std::cout << "max compute val" << maxComputeNewDevice << std::endl;
+			errNum = clGetDeviceInfo(tempDeivceIDs[deviceIndex], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_uint), &maxComputeNewDevice, &size);
 			if (maxComputeNewDevice > *maxCompute)
 			{
-				std::cout << "new best device found " << std::endl;
 				*selectedPlatform = platformNum;
 				*selectedDevice = deviceIndex;
 				*maxCompute = maxComputeNewDevice;
 			}
-			std::cout << " maxComputeUnits: " << maxComputeNewDevice << std::endl;
-			InfoDevice<cl_device_type>::display(tempDeivceIDs[deviceIndex], CL_DEVICE_TYPE, "CL_DEVICE_TYPE");
 		}
 	}
 	free(tempDeivceIDs);
@@ -123,58 +118,67 @@ int SMA_Analyzer::selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id
 	int * selectedPlatform, int * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms)
 {
 	unsigned int maxCompute = 0;
-	std::cout << "num platforms: " << numPlatforms << std::endl;
 	for (unsigned int platformNum = 0; platformNum < numPlatforms; platformNum++)
 	{
-		//if (debug) { DisplayPlatformInfo((*platformIDs)[platformNum], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR"); }
-		getBestDeviceOnPlatform(&platformIDs, platformNum, &maxCompute, selectedPlatform, selectedDevice);
+		getBestDeviceOnPlatform(&platformIDs, platformNum, &maxCompute, selectedPlatform, selectedDevice); 
 	}
+	
 	if (maxCompute == 0)
 	{
 		std::cout << " Error, no OpenCL compatible GPU device found " << std::endl;
 		return 0;
 	}
 
-	std::cout << "selected platform: " << *selectedPlatform << std::endl;
-	std::cout << "selected device: " << *selectedDevice << std::endl;
+	*numDevices =  *selectedDevice+1;
+	*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id)* *numDevices);
 
-
-
+	errNum = clGetDeviceIDs(
+		platformIDs[*numDevices],
+		CL_DEVICE_TYPE_GPU,
+		*numDevices,
+		*deviceIDs,
+		NULL);
+	checkErr(errNum, "clGetDeviceIDs");
 	
-	errNum = clGetDeviceIDs(platformIDs[0],CL_DEVICE_TYPE_ALL,0,NULL,numDevices);
+	if (debug_block1) { printDeviceInfo(**deviceIDs); }
 
-
-
-
-	if (errNum != CL_SUCCESS && errNum != CL_DEVICE_NOT_FOUND) { checkErr(errNum, "clGetDeviceIDs"); }
-	*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * *numDevices);
-
-	for (unsigned int deviceIndex = 0; deviceIndex < *numDevices; deviceIndex++) 
-	{
-		
-		errNum = clGetDeviceIDs(
-			platformIDs[0],
-			CL_DEVICE_TYPE_GPU,
-			*numDevices,
-			deviceIDs[0],
-			NULL);
-		checkErr(errNum, "clGetDeviceIDs");
-
-		InfoDevice<cl_device_type>::display(*deviceIDs[0],CL_DEVICE_TYPE,"CL_DEVICE_TYPE");
-	}
 }
 
+void SMA_Analyzer::printDeviceInfo(cl_device_id deviceIDs)
+{
+	char buffer[1024];
+	size_t max_work_size;
+	cl_uint maxDimensions;
+	size_t size;
+	cl_ulong global_mem_size;
+	clGetDeviceInfo(deviceIDs, CL_DEVICE_NAME, sizeof(buffer), buffer, &size);
+	std::cout << "Selected Device: "<< buffer << std::endl;
+	clGetDeviceInfo(deviceIDs, CL_DEVICE_VENDOR, sizeof(buffer), buffer, &size);
+	std::cout << "Device Vendor: " << buffer << std::endl;
+	clGetDeviceInfo(deviceIDs, CL_DEVICE_VERSION, sizeof(buffer), buffer, &size);
+	std::cout << "Device Version: " << buffer << std::endl;
+	clGetDeviceInfo(deviceIDs, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_size, &size);
+	std::cout << "Max work group units: " << max_work_size << std::endl;
+	clGetDeviceInfo(deviceIDs, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, &size);
+	std::cout << "Global memory size (mb) " << global_mem_size/(1024*1024) << std::endl;
+	
+	
+}
+
+
 // create context and attach selected devices
-void SMA_Analyzer::setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, int platform, cl_uint numDevices) 
+void SMA_Analyzer::setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, cl_uint platform, cl_uint numDevices) 
 {
 	cl_int errNum;
-
 	cl_context_properties contextProperties[] =
 	{
 		CL_CONTEXT_PLATFORM,
 		(cl_context_properties)platformIDs[platform],
 		0
 	};
+	size_t size;
+	int maxComputeNewDevice;
+
 
 	*context = clCreateContext(
 		contextProperties,
@@ -417,8 +421,8 @@ void SMA_Analyzer::getAverage(int numElements, int * inputData)
 	// Setup 
 	getPlatformInfo(&platformIDs, &numPlatforms, selectedPlatform, selectedDevice);
 	selectOptimalDevice(platformIDs, &deviceIDs,
-		&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
-	setupContext(platformIDs, &context, deviceIDs, 0, 1);
+	&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
+	setupContext(platformIDs, &context, &(deviceIDs[selectedDevice]), selectedPlatform,1);
 	createProgram(&program, context, 1, deviceIDs);
 	createBuffers(&inputData, numBuffers, context, &buffers, NUM_ELEMENTS_PER_BUFFER);
 	ceateCommandQueues(numBuffers, deviceIDs, context, &queues, buffers,program, &kernels);
