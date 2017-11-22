@@ -33,7 +33,6 @@
     <ClInclude Include="Average.h" />
     <ClInclude Include="ContextManager.hpp" />
     <ClInclude Include="CSV_Parser.h" />
-    <ClInclude Include="info.hpp" />
     <ClInclude Include="OpenCL_SMA.h" />
     <ClInclude Include="testDriver.hpp" />
   </ItemGroup>

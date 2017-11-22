@@ -1,12 +1,10 @@
 # include "Average.h"
 
-
-
-
-Average::Average(cl_context * contextPtr, cl_device_id * deviceIDs) 
+Average::Average(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices)
 {
 	this->context = *contextPtr;
 	this->deviceIDs = deviceIDs;
+	this->numDevices = numDevices;
 }
 
 Average::Average() {
@@ -16,12 +14,12 @@ Average::Average() {
 
 Average::~Average() 
 {
-
+	releaseBuffers();
+	releaseEvents();
+	releaseKernels();
+	releaseCommandQueues();
+	releaseProgram();
 }
-
-
-
-
 
 
 void Average::getAverage(int numElements,int * inputData, float ** outputData) 
@@ -39,9 +37,9 @@ void Average::getAverage(int numElements,int * inputData, float ** outputData)
 	const int NUM_ELEMENTS_PER_BUFFER = 4;
 	const int numBuffers = numElements / NUM_ELEMENTS_PER_BUFFER;
 
-	createProgram(&program, context, 1, deviceIDs);
-	createBuffers(&inputData, numBuffers, context, &buffers, NUM_ELEMENTS_PER_BUFFER);
-	ceateCommandQueues(numBuffers, deviceIDs, context, &queues, buffers, program, &kernels);
+	createProgram(1, deviceIDs);
+	createBuffers(numBuffers, NUM_ELEMENTS_PER_BUFFER);
+	ceateCommandQueues(numBuffers, deviceIDs, &queues, buffers, &kernels);
 	copyDataToBuffer(&queues, &buffers, inputData, numElements);
 
 	// Run
@@ -58,6 +56,8 @@ void Average::getAverage(int numElements,int * inputData, float ** outputData)
 	Clock::time_point t1 = Clock::now();
 	milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
 	std::cout << "Time to completion: " << ms.count() << "ms\n" << std::endl;
+
+
 }
 
 // Function to check and handle OpenCL errors
@@ -72,10 +72,8 @@ void Average::checkErr(cl_int err, const char * name)
 
 
 // load program and .cl file and build
-void Average::createProgram(cl_program * program, cl_context context, cl_int numDevices, cl_device_id * deviceIDs)
+void Average::createProgram(cl_int numDevices, cl_device_id * deviceIDs)
 {
-	cl_int errNum;
-
 	std::ifstream srcFile(KERNEL_FILE);
 	checkErr(srcFile.is_open() ? CL_SUCCESS : -1, "reading kernel file");
 
@@ -88,7 +86,7 @@ void Average::createProgram(cl_program * program, cl_context context, cl_int num
 
 
 	// Create program from source
-	*program = clCreateProgramWithSource(
+	program = clCreateProgramWithSource(
 		context,
 		1,
 		&src,
@@ -98,7 +96,7 @@ void Average::createProgram(cl_program * program, cl_context context, cl_int num
 
 	// Build program
 	errNum = clBuildProgram(
-		*program,
+		program,
 		numDevices,
 		deviceIDs,
 		"-I.",
@@ -109,7 +107,7 @@ void Average::createProgram(cl_program * program, cl_context context, cl_int num
 		// Determine the reason for the error
 		char buildLog[16384];
 		clGetProgramBuildInfo(
-			*program,
+			program,
 			deviceIDs[0],
 			CL_PROGRAM_BUILD_LOG,
 			sizeof(buildLog),
@@ -123,7 +121,7 @@ void Average::createProgram(cl_program * program, cl_context context, cl_int num
 }
 
 // create buffers and sub-buffers
-void Average::createBuffers(int ** inputOutput, int numBuffers, cl_context context, std::vector<cl_mem> * buffers, int numElementsPerBuffer)
+void Average::createBuffers(int numBuffers, int numElementsPerBuffer)
 {
 	cl_int errNum;
 
@@ -135,7 +133,7 @@ void Average::createBuffers(int ** inputOutput, int numBuffers, cl_context conte
 		NULL,
 		&errNum);
 	checkErr(errNum, "clCreateBuffer");
-	buffers->push_back(buffer);
+	buffers.push_back(buffer);
 
 	// now for all buffersRects other than the first create a sub-buffer
 	cl_mem newBuffer;
@@ -154,19 +152,19 @@ void Average::createBuffers(int ** inputOutput, int numBuffers, cl_context conte
 			&errNum);
 		checkErr(errNum, "clCreateSubBuffer");
 
-		buffers->push_back(newBuffer);
+		buffers.push_back(newBuffer);
 	}
 
 
 	cl_mem outputBuffer;
 	outputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(float)*(numBuffers), NULL, &errNum);
 	checkErr(errNum, "clCreateBuffer");
-	buffers->push_back(outputBuffer);
+	buffers.push_back(outputBuffer);
 }
 
 // create command queues, one queue for each main and sub-buffer
-void Average::ceateCommandQueues(int numBuffers, cl_device_id * deviceIDs, cl_context context, std::vector<cl_command_queue> * queues, std::vector<cl_mem> buffers,
-	cl_program program, std::vector<cl_kernel> *kernels)
+void Average::ceateCommandQueues(int numBuffers, cl_device_id * deviceIDs, std::vector<cl_command_queue> * queues,
+	std::vector<cl_mem> buffers, std::vector<cl_kernel> *kernels)
 {
 	cl_int errNum;
 
@@ -215,13 +213,13 @@ void Average::copyDataToBuffer(std::vector<cl_command_queue> * queues, std::vect
 		0,
 		NULL,
 		NULL);
+
+	checkErr(errNum, "host to device");
 }
 
 // execute all kernels
 void Average::callKernels(std::vector<cl_command_queue> * queues, std::vector<cl_kernel> * kernels, std::vector<cl_event> * events, int numBufferElements)
 {
-	cl_int errNum;
-
 	for (unsigned int i = 0; i < queues->size(); i++)
 	{
 		cl_event event;
@@ -240,17 +238,17 @@ void Average::callKernels(std::vector<cl_command_queue> * queues, std::vector<cl
 			NULL,
 			&event);
 
+		checkErr(errNum, "enqeue kernel");
 		events->push_back(event);
+
 	}
 }
 
 //return results from GPU to CPU memory
 void Average::copyDataToHost(std::vector<cl_command_queue> * queues, std::vector<cl_mem> * buffers, cl_uint numBuffers, float * outputVals)
 {
-	cl_int errNum;
-
 	// Read back computed data
-	clEnqueueReadBuffer(
+	errNum = clEnqueueReadBuffer(
 		(*queues)[0],
 		(*buffers)[buffers->size() - 1],
 		CL_TRUE,
@@ -260,4 +258,53 @@ void Average::copyDataToHost(std::vector<cl_command_queue> * queues, std::vector
 		0,
 		NULL,
 		NULL);
+
+	checkErr(errNum, "device to host");
+}
+
+void Average::releaseCommandQueues() 
+{
+	for (cl_uint queueIndex = 0; queueIndex < queues.size(); queueIndex++) 
+	{
+		errNum = clReleaseCommandQueue(queues[queueIndex]);
+		checkErr(errNum, "command queue release");
+
+	}
+
+
+}
+void Average::releaseKernels() 
+{
+	for(cl_uint kernelIndex = 0; kernelIndex < kernels.size(); kernelIndex ++)
+	{
+		errNum = clReleaseKernel(kernels[kernelIndex]);
+		checkErr(errNum, "kernel release");
+	}
+}
+
+
+
+void Average::releaseBuffers()
+{
+	for (int bufferIndex = 0; bufferIndex < buffers.size(); bufferIndex++)
+	{
+		errNum = clReleaseMemObject(buffers[bufferIndex]);
+		checkErr(errNum, "release Buffer");
+	}
+
+}
+
+void Average::releaseProgram()
+{
+	clReleaseProgram(program);
+}
+
+void Average::releaseEvents() 
+{
+	for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) 
+	{
+		errNum = clReleaseEvent(events[eventIndex]);
+		checkErr(errNum, "release events");
+	}
+
 }

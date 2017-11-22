@@ -18,9 +18,6 @@
     <None Include="Larkin_Module12.cl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="info.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="OpenCL_SMA.h">
       <Filter>Source Files</Filter>
     </ClInclude>

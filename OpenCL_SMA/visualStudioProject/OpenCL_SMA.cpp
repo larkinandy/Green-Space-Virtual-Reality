@@ -1,8 +1,10 @@
 #include "OpenCL_SMA.h"
 
+
+
 SMA_Analyzer::SMA_Analyzer() 
 {
-
+	
 }
 
 SMA_Analyzer::SMA_Analyzer(char * inputFilepath, int numObs)
@@ -64,13 +66,15 @@ void SMA_Analyzer::checkErr(cl_int err, const char * name)
 // main function.  For each four sequential elements in an array, compute the average (mean) value using an OpenCL kernel
 void SMA_Analyzer::getAverage(int numElements, int * inputData, float **outputData) 
 {
-
+	cl_uint numDevices = 1;
 	deviceIDs = contextManager.getOptimalDevice();
 	context = *contextManager.getOptimalContext();
 
-	averager = new Average(&context, deviceIDs);
+	averager = new Average(&context, deviceIDs,numDevices);
 	averager->getAverage(numElements, inputData,outputData);
 
 	std::cout << (*outputData)[0] << std::endl;
+
+	delete averager;
 
 }

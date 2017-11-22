@@ -4,7 +4,7 @@
 Context_Manager::Context_Manager(bool debug) 
 {
 	this->debug = debug;
-	getPlatformInfo(&platformIDs, &numPlatforms, selectedPlatform, selectedDevice);
+	getPlatformInfo(&platformIDs);
 	selectOptimalDevice(platformIDs, &deviceIDs,
 		&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
 	setupContext(platformIDs, &context, &(deviceIDs[selectedDevice]), selectedPlatform, 1);
@@ -13,7 +13,7 @@ Context_Manager::Context_Manager(bool debug)
 Context_Manager::Context_Manager()
 {
 	this->debug = false;
-	getPlatformInfo(&platformIDs, &numPlatforms, selectedPlatform, selectedDevice);
+	getPlatformInfo(&platformIDs);
 	selectOptimalDevice(platformIDs, &deviceIDs,
 		&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
 	setupContext(platformIDs, &context, &(deviceIDs[selectedDevice]), selectedPlatform, 1);
@@ -21,6 +21,8 @@ Context_Manager::Context_Manager()
 
 Context_Manager::~Context_Manager() 
 {
+	releaseDevices(deviceIDs, numDevices);
+	releaseContext(context);
 	free(platformIDs);
 	free(deviceIDs);
 }
@@ -60,44 +62,37 @@ void Context_Manager::checkErr(cl_int err, const char * name)
 
 
 // identify platforms and choose first platform on list
-void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs, cl_uint * numPlatforms, cl_uint selectedPlatform, cl_uint selectedDevice)
+void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs)
 {
-	errNum = clGetPlatformIDs(0, NULL, numPlatforms);
+	errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
 	checkErr(
 		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
 
-	*platformIDs = (cl_platform_id *)malloc(sizeof(cl_platform_id)* *numPlatforms);
+	*platformIDs = (cl_platform_id *)malloc(sizeof(cl_platform_id)* numPlatforms);
 
-	int maxComputeUnits;
-
-	errNum = clGetPlatformIDs(*numPlatforms, *platformIDs, NULL);
+	errNum = clGetPlatformIDs(numPlatforms, *platformIDs, NULL);
 	checkErr(
-		(errNum != CL_SUCCESS) ? errNum : (*numPlatforms <= 0 ? -1 : CL_SUCCESS),
+		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
 
 }
 
-void Context_Manager::getBestDeviceOnPlatform(cl_platform_id ** platformIDs, cl_uint platformNum,
+void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_uint platformNum,
 	cl_uint * maxCompute, cl_uint *selectedPlatform, cl_uint * selectedDevice)
 {
 	cl_uint numDevices;
-	errNum = clGetDeviceIDs((*platformIDs)[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
-	cl_device_id *tempDeivceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
+	errNum = clGetDeviceIDs(platformIDs[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
 	if (numDevices > 0) 
 	{
-		errNum = clGetDeviceIDs(
-			(*platformIDs)[platformNum],
-			CL_DEVICE_TYPE_GPU,
-			numDevices,
-			tempDeivceIDs,
-			NULL);
+		cl_device_id *tempDeivceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
+		errNum = clGetDeviceIDs(platformIDs[platformNum],CL_DEVICE_TYPE_GPU,numDevices,tempDeivceIDs,NULL);
 		checkErr(errNum, "clGetDeviceIDs");
 
+		cl_uint maxComputeNewDevice = 0;
+		size_t size;
 		for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
 		{
-			cl_uint maxComputeNewDevice = 0;
-			size_t size;
 			errNum = clGetDeviceInfo(tempDeivceIDs[deviceIndex], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_uint), &maxComputeNewDevice, &size);
 			if (maxComputeNewDevice > *maxCompute)
 			{
@@ -106,8 +101,9 @@ void Context_Manager::getBestDeviceOnPlatform(cl_platform_id ** platformIDs, cl_
 				*maxCompute = maxComputeNewDevice;
 			}
 		}
+		free(tempDeivceIDs);
 	}
-	free(tempDeivceIDs);
+	
 }
 
 
@@ -116,9 +112,9 @@ int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device
 	cl_uint * selectedPlatform, cl_uint * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms)
 {
 	unsigned int maxCompute = 0;
-	for (unsigned int platformNum = 0; platformNum < numPlatforms; platformNum++)
+	for (cl_uint platformNum = 0; platformNum < numPlatforms; platformNum++)
 	{
-		getBestDeviceOnPlatform(&platformIDs, platformNum, &maxCompute, selectedPlatform, selectedDevice);
+		getBestDeviceOnPlatform(platformIDs, platformNum, &maxCompute, selectedPlatform, selectedDevice);
 	}
 
 	if (maxCompute == 0)
@@ -135,15 +131,10 @@ int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device
 	*numDevices = *selectedDevice + 1;
 	*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id)* *numDevices);
 
-	errNum = clGetDeviceIDs(
-		platformIDs[*selectedDevice],
-		CL_DEVICE_TYPE_GPU,
-		*numDevices,
-		*deviceIDs,
-		NULL);
+	errNum = clGetDeviceIDs(platformIDs[*selectedDevice],CL_DEVICE_TYPE_GPU,*numDevices,*deviceIDs,NULL);
 	checkErr(errNum, "clGetDeviceIDs");
 
-	if (debug) { printDeviceInfo(); }
+	printDeviceInfo();
 
 }
 
@@ -174,7 +165,7 @@ void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 		clGetDeviceInfo(deviceIDs[deviceNum], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_size, &size);
 		std::cout << "Max work group units: " << max_work_size << std::endl;
 		clGetDeviceInfo(deviceIDs[deviceNum], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, &size);
-		std::cout << "Global memory size (mb) " << global_mem_size / (1024 * 1024) << std::endl;
+		std::cout << "Global memory size (mb) " << global_mem_size / (1024 * 1024) << std::endl << std::endl;
 
 	}
 }
@@ -190,9 +181,6 @@ void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * co
 		(cl_context_properties)platformIDs[platform],
 		0
 	};
-	size_t size;
-	int maxComputeNewDevice;
-
 
 	*context = clCreateContext(
 		contextProperties,
@@ -202,4 +190,19 @@ void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * co
 		NULL,
 		&errNum);
 	checkErr(errNum, "clCreateContext");
+}
+
+void Context_Manager::releaseContext(cl_context context) 
+{
+	errNum = clReleaseContext(context);
+	checkErr(errNum, "release context");
+}
+
+void Context_Manager::releaseDevices(cl_device_id * deviceIDs, cl_uint numDevices) 
+{
+	for (int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
+	{
+		errNum = clReleaseDevice(deviceIDs[deviceIndex]);
+		checkErr(errNum, "release devices");
+	}
 }

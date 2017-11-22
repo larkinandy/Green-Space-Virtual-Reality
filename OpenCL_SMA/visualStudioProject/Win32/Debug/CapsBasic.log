@@ -1,2 +1,5 @@
-﻿  testDriver.cpp
+﻿  ContextManager.cpp
+ContextManager.cpp(153): warning C4101: 'maxDimensions': unreferenced local variable
+ContextManager.cpp(203): warning C4018: '<': signed/unsigned mismatch
+i:\greenspacevirtualreality\opencl_sma\visualstudioproject\contextmanager.cpp(139): warning C4715: 'Context_Manager::selectOptimalDevice': not all control paths return a value
   CapsBasic.vcxproj -> I:\GreenSpaceVirtualReality\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe

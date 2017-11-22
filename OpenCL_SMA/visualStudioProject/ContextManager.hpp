@@ -37,12 +37,14 @@ class Context_Manager
 		bool debug;
 
 		void checkErr(cl_int err, const char * name);
-		void getPlatformInfo(cl_platform_id ** platformIDs, cl_uint * numPlatforms, cl_uint selectedPlatform, cl_uint selectedDevice);
-		void getBestDeviceOnPlatform(cl_platform_id ** platformIDs, cl_uint platformNum,
+		void getPlatformInfo(cl_platform_id ** platformIds);
+		void getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_uint platformNum,
 			cl_uint * maxCompute, cl_uint *selectedPlatform, cl_uint * selectedDevice);
 		int selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
 			cl_uint * selectedPlatform, cl_uint * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms);
 		void setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, cl_uint platform, cl_uint numDevices);
 		
+		void releaseContext(cl_context context);
+		void releaseDevices(cl_device_id * deviceIDs, cl_uint numDevices);
 
 };

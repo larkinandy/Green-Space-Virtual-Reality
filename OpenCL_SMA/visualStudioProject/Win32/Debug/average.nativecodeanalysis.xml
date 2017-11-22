@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>i:\greenspacevirtualreality\opencl_sma\visualstudioproject\</FILEPATH>
+      <FILENAME>average.cpp</FILENAME>
+      <LINE>75</LINE>
+      <COLUMN>27</COLUMN>
+    </SFA>
+    <DEFECTCODE>6262</DEFECTCODE>
+    <DESCRIPTION>Function uses '16628' bytes of stack:  exceeds /analyze:stacksize '16384'.  Consider moving some data to heap.</DESCRIPTION>
+    <FUNCTION>Average::createProgram</FUNCTION>
+    <DECORATED>?createProgram@Average@@AAEXPAPAU_cl_program@@PAU_cl_context@@HPAPAU_cl_device_id@@@Z</DECORATED>
+    <FUNCLINE>75</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+</DEFECTS>

@@ -11,7 +11,6 @@
 #include "Average.h"
 #include <CL/cl.h>
 
-
 class SMA_Analyzer
 {
 public:
@@ -31,7 +30,6 @@ protected:
 private:
 	char * inputFilepath;
 	int numObs;
-	const char * KERNEL_FILE = "Larkin_module12.cl";
 	const bool debug = true;
 	const bool debug_block1 = true;
 
@@ -50,11 +48,7 @@ private:
 	cl_platform_id * platformIDs = NULL;
 	cl_device_id * deviceIDs = NULL;
 	cl_context context = NULL;
-	cl_program program;
-	std::vector<cl_kernel> kernels;
-	std::vector<cl_command_queue> queues;
-	std::vector<cl_mem> buffers;
-	std::vector<cl_event> events;
+	
 
 	void checkErr(cl_int err, const char * name);
 
