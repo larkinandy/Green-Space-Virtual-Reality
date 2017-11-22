@@ -33,6 +33,9 @@
     <ClInclude Include="Average.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="DeviceBaseClass.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OpenCL_SMA.cpp">
@@ -50,7 +53,7 @@
     <ClCompile Include="Average.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Devce_Base_Class.cpp">
+    <ClCompile Include="DeviceBaseClass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

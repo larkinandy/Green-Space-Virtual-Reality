@@ -27,6 +27,7 @@ public:
 	void printDeviceInfo();
 protected:
 
+
 private:
 	char * inputFilepath;
 	int numObs;
