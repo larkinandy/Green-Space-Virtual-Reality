@@ -1,5 +1,5 @@
-﻿  Skipping... (no relevant changes detected)
-  testDriver.cpp
-  OpenCL_SMA.cpp
-  Average.cpp
-  CapsBasic.vcxproj -> I:\GreenSpaceVirtualReality\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe
+﻿  ContextManager.cpp
+ContextManager.cpp(156): warning C4101: 'maxDimensions': unreferenced local variable
+ContextManager.cpp(208): warning C4018: '<': signed/unsigned mismatch
+d:\virturalrealitygreenspace\opencl_sma\visualstudioproject\contextmanager.cpp(142): warning C4715: 'Context_Manager::selectOptimalDevice': not all control paths return a value
+  CapsBasic.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe

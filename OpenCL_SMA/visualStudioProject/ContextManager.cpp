@@ -99,6 +99,9 @@ void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_u
 				*selectedPlatform = platformNum;
 				*selectedDevice = deviceIndex;
 				*maxCompute = maxComputeNewDevice;
+				std::cout << "platformNum: " << platformNum << std::endl;
+				std::cout << maxComputeNewDevice << std::endl;
+				
 			}
 		}
 		free(tempDeivceIDs);
@@ -131,7 +134,7 @@ int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device
 	*numDevices = *selectedDevice + 1;
 	*deviceIDs = (cl_device_id *)malloc(sizeof(cl_device_id)* *numDevices);
 
-	errNum = clGetDeviceIDs(platformIDs[*selectedDevice],CL_DEVICE_TYPE_GPU,*numDevices,*deviceIDs,NULL);
+	errNum = clGetDeviceIDs(platformIDs[*selectedPlatform],CL_DEVICE_TYPE_GPU,*numDevices,*deviceIDs,NULL);
 	checkErr(errNum, "clGetDeviceIDs");
 
 	printDeviceInfo();
@@ -174,6 +177,8 @@ void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 // create context and attach selected devices
 void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, cl_uint platform, cl_uint numDevices)
 {
+
+
 	cl_int errNum;
 	cl_context_properties contextProperties[] =
 	{
