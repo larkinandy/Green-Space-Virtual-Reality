@@ -34,20 +34,23 @@ int main(int argc, char** argv)
 	
 	SMA_Analyzer analyzer = SMA_Analyzer();
 	
-	
-	
 	int * testData1 = NULL;
+	int *testData2 = NULL;
 	float * output1 = NULL;
 	float * output2 = NULL;
-	createInput(16,&testData1);
-	
-	
-	analyzer.getAverage(16, testData1,&output1);
-	int *testData2 = NULL;
-	createInput(16,&testData2);
-	analyzer.getAverage(16, testData2,&output2);
-	
 
+
+	for (int numRuns = 0; numRuns < 100000; numRuns++) {
+
+		createInput(16, &testData1);
+
+
+		analyzer.getAverage(16, testData1, &output1);
+		
+		createInput(16, &testData2);
+		analyzer.getAverage(16, testData2, &output2);
+
+	}
 
 	printOutput(4,output2);
 	

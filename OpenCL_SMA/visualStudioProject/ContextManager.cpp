@@ -1,7 +1,7 @@
 
 #include "ContextManager.hpp"
 
-Context_Manager::Context_Manager(bool debug) 
+Context_Manager::Context_Manager(cl_bool debug) 
 {
 	this->debug = debug;
 	getPlatformInfo(&platformIDs);
@@ -24,7 +24,6 @@ Context_Manager::~Context_Manager()
 	releaseDevices(deviceIDs, numDevices);
 	releaseContext(context);
 	free(platformIDs);
-	free(deviceIDs);
 }
 
 
@@ -37,7 +36,7 @@ cl_device_id * Context_Manager::getOptimalDevice()
 
 cl_platform_id * Context_Manager::getOptimalPlatform() 
 {
-	return &(platformIDs[0]);
+	return &(platformIDs[selectedPlatform]);
 }
 
 
@@ -65,6 +64,7 @@ void Context_Manager::checkErr(cl_int err, const char * name)
 void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs)
 {
 	errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
+	std::cout << "num platforms: " << numPlatforms << std::endl;
 	checkErr(
 		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
@@ -81,19 +81,22 @@ void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs)
 void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_uint platformNum,
 	cl_uint * maxCompute, cl_uint *selectedPlatform, cl_uint * selectedDevice)
 {
-	cl_uint numDevices;
-	errNum = clGetDeviceIDs(platformIDs[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
-	if (numDevices > 0) 
+	cl_uint numTempDevices = 0;
+	errNum = clGetDeviceIDs(platformIDs[platformNum], CL_DEVICE_TYPE_GPU, 0, NULL, &numTempDevices);
+	if (errNum != 0) { std::cout << "no GPUs on platform" << platformNum; return; }
+	if (numTempDevices > 0)
 	{
-		cl_device_id *tempDeivceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevices);
-		errNum = clGetDeviceIDs(platformIDs[platformNum],CL_DEVICE_TYPE_GPU,numDevices,tempDeivceIDs,NULL);
+		cl_device_id *tempDeivceIDs = (cl_device_id *)malloc(sizeof(cl_device_id) * numTempDevices);
+		errNum = clGetDeviceIDs(platformIDs[platformNum],CL_DEVICE_TYPE_GPU, numTempDevices,tempDeivceIDs,NULL);
+		if (errNum == -1) { free(tempDeivceIDs); return; }
 		checkErr(errNum, "clGetDeviceIDs");
 
 		cl_uint maxComputeNewDevice = 0;
 		size_t size;
-		for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
+		for (cl_uint deviceIndex = 0; deviceIndex < numTempDevices; deviceIndex++)
 		{
 			errNum = clGetDeviceInfo(tempDeivceIDs[deviceIndex], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_uint), &maxComputeNewDevice, &size);
+			//if (errNum != 0) { std::cout << "oh no ! " << std::endl; free(tempDeivceIDs); return; }
 			if (maxComputeNewDevice > *maxCompute)
 			{
 				*selectedPlatform = platformNum;
@@ -114,7 +117,7 @@ void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_u
 int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
 	cl_uint * selectedPlatform, cl_uint * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms)
 {
-	unsigned int maxCompute = 0;
+	cl_uint maxCompute = 0;
 	for (cl_uint platformNum = 0; platformNum < numPlatforms; platformNum++)
 	{
 		getBestDeviceOnPlatform(platformIDs, platformNum, &maxCompute, selectedPlatform, selectedDevice);
@@ -143,7 +146,7 @@ int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device
 
 void Context_Manager::printDeviceInfo()
 {
-	for (unsigned int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
+	for (cl_uint deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
 	{
 		printDeviceInfo(deviceIndex);
 	}
@@ -177,7 +180,7 @@ void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 // create context and attach selected devices
 void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, cl_uint platform, cl_uint numDevices)
 {
-
+	std::cout << "platform number used to generate context: " << platform << std::endl;
 
 	cl_int errNum;
 	cl_context_properties contextProperties[] =
@@ -199,15 +202,28 @@ void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * co
 
 void Context_Manager::releaseContext(cl_context context) 
 {
-	errNum = clReleaseContext(context);
-	checkErr(errNum, "release context");
+	cl_uint numReleaes;
+	clGetContextInfo(context, CL_CONTEXT_REFERENCE_COUNT, sizeof(cl_uint), &numReleaes, NULL);
+	for (cl_int releaseCount = numReleaes; releaseCount > 0; releaseCount--) 
+	{
+		errNum = clReleaseContext(context);
+		checkErr(errNum, "release context");
+	}
+	
+
 }
 
 void Context_Manager::releaseDevices(cl_device_id * deviceIDs, cl_uint numDevices) 
 {
+	cl_uint numReleaes;
 	for (int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
 	{
-		errNum = clReleaseDevice(deviceIDs[deviceIndex]);
-		checkErr(errNum, "release devices");
+		clGetDeviceInfo(deviceIDs[deviceIndex], CL_DEVICE_REFERENCE_COUNT, sizeof(cl_uint), &numReleaes, NULL);
+		for (cl_int releaseCount = numReleaes; releaseCount > 0; releaseCount--)
+		{
+			errNum = clReleaseDevice(deviceIDs[deviceIndex]);
+			checkErr(errNum, "release devices");
+		}
 	}
+	free(deviceIDs);
 }
