@@ -12,7 +12,7 @@ class Average : public DeviceBaseClass
 
 public:
 	void getAverage(cl_uint numElements, cl_int * inputData, cl_float ** outputData);
-	Average(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices);
+	Average(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices, cl_uint preferredDevice);
 	Average();
 	~Average();
 

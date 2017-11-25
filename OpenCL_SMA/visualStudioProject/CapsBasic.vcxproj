@@ -22,19 +22,20 @@
     <ClCompile Include="Average.cpp" />
     <ClCompile Include="OpenCL_SMA.cpp" />
     <ClCompile Include="ContextManager.cpp" />
-    <ClCompile Include="CSV_Parser.cpp" />
+    <ClCompile Include="clParser.cpp" />
     <ClCompile Include="DeviceBaseClass.cpp" />
     <ClCompile Include="testDriver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Larkin_Module12.cl" />
+    <None Include="parserKernels.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Average.h" />
     <ClInclude Include="ContextManager.hpp" />
-    <ClInclude Include="CSV_Parser.h" />
+    <ClInclude Include="ClParser.hpp" />
     <ClInclude Include="DeviceBaseClass.hpp" />
-    <ClInclude Include="OpenCL_SMA.h" />
+    <ClInclude Include="OpenCL_SMA.hpp" />
     <ClInclude Include="testDriver.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -42,6 +43,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>CapsBasic</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ProjectName>OpenCL_SMA</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

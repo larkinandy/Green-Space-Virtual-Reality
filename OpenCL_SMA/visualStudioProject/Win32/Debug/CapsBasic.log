@@ -1,2 +1,11 @@
-﻿  testDriver.cpp
-  CapsBasic.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe
+﻿  clParser.cpp
+clParser.cpp(49): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(61): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(98): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(138): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(142): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(146): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(181): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(195): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(202): warning C4018: '<': signed/unsigned mismatch
+  CapsBasic.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe

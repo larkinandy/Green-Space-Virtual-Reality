@@ -1,6 +1,6 @@
 # include "Average.h"
 
-Average::Average(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices): DeviceBaseClass(contextPtr, deviceIDs, numDevices)
+Average::Average(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices, cl_uint preferredDevice): DeviceBaseClass(contextPtr, deviceIDs, numDevices, preferredDevice)
 {
 	
 }
@@ -32,7 +32,7 @@ void Average::getAverage(cl_uint numElements,cl_int * inputData, cl_float ** out
 	const cl_int NUM_ELEMENTS_PER_BUFFER = 4;
 	const cl_int numBuffers = numElements / NUM_ELEMENTS_PER_BUFFER;
 
-	createProgram(1, deviceIDs,1);
+	createProgram(1, deviceIDs,preferredDevice);
 	createBuffers(numBuffers, NUM_ELEMENTS_PER_BUFFER);
 	ceateCommandQueues(4);
 	std::cout << "copying data to buffer" << std::endl;
@@ -51,7 +51,7 @@ void Average::getAverage(cl_uint numElements,cl_int * inputData, cl_float ** out
 	//clWaitForEvents(events.size(), &events[0]);
 
 	// Get results and print
-	copyDataToHost(0,buffers.size()-1,numBuffers, *outputData);
+	copyDataToHost(0,buffers.size()-1,*outputData, numBuffers);
 
 	//measure elapsed time
 	Clock::time_point t1 = Clock::now();
@@ -65,19 +65,19 @@ void Average::getAverage(cl_uint numElements,cl_int * inputData, cl_float ** out
 void Average::createBuffers(cl_uint numBuffers, cl_uint numElementsPerBuffer)
 {
 	cl_uint bufferIndex = 10;
-	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY, &bufferIndex);
+	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY);
 	if (debug) {
 		std::cout << "buffer index: " << bufferIndex << std::endl;
 	}
-	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY, &bufferIndex);
+	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY);
 	if (debug) {
 		std::cout << "buffer index: " << bufferIndex << std::endl;
 	}
-	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY, &bufferIndex);
+	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY);
 	if (debug) {
 		std::cout << "buffer index: " << bufferIndex << std::endl;
 	}
-	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY, &bufferIndex);
+	createBuffer(sizeof(cl_int), numElementsPerBuffer, CL_MEM_READ_ONLY);
 	if (debug) {
 		std::cout << "buffer index: " << bufferIndex << std::endl;
 	}

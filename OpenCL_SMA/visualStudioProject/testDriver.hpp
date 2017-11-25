@@ -1,5 +1,5 @@
 #pragma once
-#include "OpenCL_SMA.h"
+#include "OpenCL_SMA.hpp"
 
 #include <iostream>
 #include <fstream>

@@ -1,14 +1,9 @@
 #pragma once
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-#include<chrono>
 
 #include "ContextManager.hpp"
 #include "Average.h"
+#include "ClParser.hpp"
 #include <CL/cl.h>
 
 class SMA_Analyzer
@@ -25,6 +20,7 @@ public:
 	int getSelectedPlatform();
 	int getSelectedDevice();
 	void printDeviceInfo();
+	cl_int parseCSV(char *inputFilepath);
 protected:
 
 
@@ -34,18 +30,19 @@ private:
 	const bool debug = true;
 	const bool debug_block1 = true;
 
-	Context_Manager contextManager = Context_Manager(debug_block1);
+	Context_Manager * contextManager;
 	Average * averager;
+	ClParser * parser;
 
-	cl_uint selectedPlatform = -1;
-	cl_uint selectedDevice = -1;
+	cl_uint selectedPlatform = NULL;
+	cl_uint selectedDevice = NULL;
 
 
 
 	// setup opencl objects and variables;
 	cl_int errNum;
 	cl_uint numPlatforms = 0;
-	cl_uint numDevices = 1;
+	cl_uint numDevices = 0;
 	cl_platform_id * platformIDs = NULL;
 	cl_device_id * deviceIDs = NULL;
 	cl_context context = NULL;

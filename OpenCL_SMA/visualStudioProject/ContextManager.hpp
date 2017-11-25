@@ -11,16 +11,17 @@
 
 #include <CL/cl.h>
 
+using namespace std;
+
 
 class Context_Manager 
 {
 	public:
 		Context_Manager();
-		Context_Manager(cl_bool debug);
 		~Context_Manager();
-		cl_device_id * getOptimalDevice();
-		cl_platform_id * getOptimalPlatform();
-		cl_context * getOptimalContext();
+		void getOptimalDevices(cl_device_id ** inDeviceIDs, cl_uint * optimalDevices, cl_uint  * numDevices);
+		void getOptimalPlatform(cl_platform_id * optimalPlatform);
+		void getOptimalContext(cl_context * optimalContext);
 		void printDeviceInfo();
 		void printDeviceInfo(cl_uint deviceNum);
 	protected:
@@ -35,7 +36,7 @@ class Context_Manager
 		cl_uint selectedPlatform;
 		cl_uint  numPlatforms = 0;
 
-		cl_bool debug;
+		const cl_bool debug = true;
 
 		void checkErr(cl_int err, const char * name);
 		void getPlatformInfo(cl_platform_id ** platformIds);
@@ -47,5 +48,5 @@ class Context_Manager
 	
 		void releaseContext(cl_context context);
 		void releaseDevices(cl_device_id * deviceIDs, cl_uint numDevices);
-
+		void releaseDevices();
 };

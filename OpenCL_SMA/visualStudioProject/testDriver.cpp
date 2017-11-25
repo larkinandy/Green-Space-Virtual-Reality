@@ -24,36 +24,26 @@ void createInput(int numElements, int **dataset)
 }
 
 
-
-
-int main(int argc, char** argv)
-{
+void testAverageTest() {
 
 	//_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF);
-	
-	
-	SMA_Analyzer analyzer = SMA_Analyzer();
-	
+
 	int * testData1 = NULL;
 	int *testData2 = NULL;
 	float * output1 = NULL;
 	float * output2 = NULL;
 
-
-	for (int numRuns = 0; numRuns < 100000; numRuns++) {
-
+	SMA_Analyzer analyzer = SMA_Analyzer();
 		createInput(16, &testData1);
 
 
 		analyzer.getAverage(16, testData1, &output1);
-		
+
 		createInput(16, &testData2);
 		analyzer.getAverage(16, testData2, &output2);
 
-	}
+	printOutput(4, output2);
 
-	printOutput(4,output2);
-	
 	free(testData1);
 	free(testData2);
 	free(output1);
@@ -61,8 +51,15 @@ int main(int argc, char** argv)
 
 	std::cout << "Program completed successfully" << std::endl;
 
-	
-	return 0;
-	
-	
+
+}
+
+int main(int argc, char** argv)
+{
+	SMA_Analyzer analyzer = SMA_Analyzer();
+	analyzer.parseCSV("TestData_OpenCL_SMA3.csv");
+	//testAverageTest();
+
+
+
 }

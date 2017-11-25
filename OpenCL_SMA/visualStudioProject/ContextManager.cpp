@@ -1,48 +1,48 @@
-
 #include "ContextManager.hpp"
 
-Context_Manager::Context_Manager(cl_bool debug) 
-{
-	this->debug = debug;
-	getPlatformInfo(&platformIDs);
-	selectOptimalDevice(platformIDs, &deviceIDs,
-		&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
-	setupContext(platformIDs, &context, &(deviceIDs[selectedDevice]), selectedPlatform, 1);
-}
 
-Context_Manager::Context_Manager()
+Context_Manager::Context_Manager() 
 {
-	this->debug = false;
 	getPlatformInfo(&platformIDs);
-	selectOptimalDevice(platformIDs, &deviceIDs,
-		&selectedPlatform, &selectedDevice, &numDevices, numPlatforms);
+	errNum = selectOptimalDevice(platformIDs, &deviceIDs,&selectedPlatform,
+		&selectedDevice, &numDevices, numPlatforms);
+	checkErr(errNum, "selectOptimalDevice");
 	setupContext(platformIDs, &context, &(deviceIDs[selectedDevice]), selectedPlatform, 1);
+
 }
 
 Context_Manager::~Context_Manager() 
 {
-	releaseDevices(deviceIDs, numDevices);
+	free(deviceIDs);
 	releaseContext(context);
 	free(platformIDs);
+	cout << "destroying context manager" << endl;
+
 }
 
+void Context_Manager::releaseDevices()
+{
+	// only needed if using subdevices
+}
 
-cl_device_id * Context_Manager::getOptimalDevice() 
+void Context_Manager::getOptimalDevices(cl_device_id ** indeviceIDs, cl_uint * optimalDevices, cl_uint * numDevices)
 {
 	//return &(deviceIDs[selectedDevice]);
-	return deviceIDs;
+	*indeviceIDs = deviceIDs;
+	*optimalDevices = this->selectedDevice;
+	*numDevices = this->numDevices;
 }
 
 
-cl_platform_id * Context_Manager::getOptimalPlatform() 
+void Context_Manager::getOptimalPlatform(cl_platform_id * platformID)
 {
-	return &(platformIDs[selectedPlatform]);
+	platformID = &(this->platformIDs[selectedPlatform]);
 }
 
 
-cl_context * Context_Manager::getOptimalContext() 
+void Context_Manager::getOptimalContext(cl_context * context)
 {
-	return &context;
+	*context = this->context;
 }
 
 
@@ -56,8 +56,6 @@ void Context_Manager::checkErr(cl_int err, const char * name)
 		exit(EXIT_FAILURE);
 	}
 }
-
-
 
 
 // identify platforms and choose first platform on list
@@ -75,7 +73,6 @@ void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs)
 	checkErr(
 		(errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS),
 		"clGetPlatformIDs");
-
 }
 
 void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_uint platformNum,
@@ -95,16 +92,18 @@ void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_u
 		size_t size;
 		for (cl_uint deviceIndex = 0; deviceIndex < numTempDevices; deviceIndex++)
 		{
-			errNum = clGetDeviceInfo(tempDeivceIDs[deviceIndex], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_uint), &maxComputeNewDevice, &size);
-			//if (errNum != 0) { std::cout << "oh no ! " << std::endl; free(tempDeivceIDs); return; }
+			errNum = clGetDeviceInfo(
+				tempDeivceIDs[deviceIndex],
+				CL_DEVICE_MAX_WORK_GROUP_SIZE,
+				sizeof(cl_uint),
+				&maxComputeNewDevice,
+				&size);
+
 			if (maxComputeNewDevice > *maxCompute)
 			{
 				*selectedPlatform = platformNum;
 				*selectedDevice = deviceIndex;
 				*maxCompute = maxComputeNewDevice;
-				std::cout << "platformNum: " << platformNum << std::endl;
-				std::cout << maxComputeNewDevice << std::endl;
-				
 			}
 		}
 		free(tempDeivceIDs);
@@ -114,7 +113,7 @@ void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_u
 
 
 // identify devices and choose first OpenCL compatible device on list
-int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
+cl_int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
 	cl_uint * selectedPlatform, cl_uint * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms)
 {
 	cl_uint maxCompute = 0;
@@ -126,7 +125,7 @@ int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device
 	if (maxCompute == 0)
 	{
 		std::cout << " Error, no OpenCL compatible GPU device found " << std::endl;
-		return 0;
+		return -1;
 	}
 
 	if (debug)
@@ -141,7 +140,7 @@ int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device
 	checkErr(errNum, "clGetDeviceIDs");
 
 	printDeviceInfo();
-
+	return 0;
 }
 
 void Context_Manager::printDeviceInfo()
@@ -156,10 +155,9 @@ void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 {
 	char buffer[1024];
 	size_t max_work_size;
-	cl_uint maxDimensions;
 	size_t size;
 	cl_ulong global_mem_size;
-{
+	{
 		std::cout << "properties for device number " << deviceNum << std::endl;
 
 		clGetDeviceInfo(deviceIDs[deviceNum], CL_DEVICE_NAME, sizeof(buffer), buffer, &size);
@@ -190,13 +188,7 @@ void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * co
 		0
 	};
 
-	*context = clCreateContext(
-		contextProperties,
-		numDevices,
-		deviceIDs,
-		NULL,
-		NULL,
-		&errNum);
+	*context = clCreateContext(contextProperties,numDevices,deviceIDs,NULL,NULL,&errNum);
 	checkErr(errNum, "clCreateContext");
 }
 
@@ -209,20 +201,19 @@ void Context_Manager::releaseContext(cl_context context)
 		errNum = clReleaseContext(context);
 		checkErr(errNum, "release context");
 	}
-	
-
 }
 
 void Context_Manager::releaseDevices(cl_device_id * deviceIDs, cl_uint numDevices) 
 {
 	cl_uint numReleaes;
-	for (int deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
+	for (cl_uint deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
 	{
 		clGetDeviceInfo(deviceIDs[deviceIndex], CL_DEVICE_REFERENCE_COUNT, sizeof(cl_uint), &numReleaes, NULL);
-		for (cl_int releaseCount = numReleaes; releaseCount > 0; releaseCount--)
+		for (cl_int releaseCount = numReleaes; releaseCount >= 0; releaseCount--)
 		{
 			errNum = clReleaseDevice(deviceIDs[deviceIndex]);
 			checkErr(errNum, "release devices");
+			std::cout << " releasing device" << deviceIndex << std::endl;
 		}
 	}
 	free(deviceIDs);

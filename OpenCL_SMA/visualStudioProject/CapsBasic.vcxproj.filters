@@ -16,24 +16,25 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Larkin_Module12.cl" />
+    <None Include="parserKernels.cl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OpenCL_SMA.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="testDriver.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ContextManager.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="CSV_Parser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Average.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="DeviceBaseClass.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenCL_SMA.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClParser.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,13 +48,13 @@
     <ClCompile Include="ContextManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CSV_Parser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Average.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DeviceBaseClass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

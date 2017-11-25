@@ -1,16 +1,21 @@
-#include "OpenCL_SMA.h"
+#include "OpenCL_SMA.hpp"
 
 
 
 SMA_Analyzer::SMA_Analyzer() 
 {
-	
+	contextManager = new Context_Manager();
+	contextManager->getOptimalDevices(&deviceIDs, &selectedDevice, &numDevices);
+	contextManager->getOptimalContext(&context);
 }
 
 SMA_Analyzer::SMA_Analyzer(char * inputFilepath, int numObs)
 {
 	this->inputFilepath = inputFilepath;
 	this->numObs = numObs;
+	contextManager = new Context_Manager();
+	contextManager->getOptimalDevices(&deviceIDs, &selectedDevice, &numDevices);
+	contextManager->getOptimalContext(&context);
 }
 
 void SMA_Analyzer::setFilepath(char * filepath) 
@@ -35,7 +40,8 @@ int SMA_Analyzer::getNumObs()
 
 SMA_Analyzer::~SMA_Analyzer() 
 {
-
+	delete contextManager;
+	cout << "destroying SMA Analyzer " << endl;
 }
 
 int SMA_Analyzer::getSelectedPlatform() 
@@ -49,7 +55,7 @@ int SMA_Analyzer::getSelectedDevice()
 
 void SMA_Analyzer::printDeviceInfo() 
 {
-	contextManager.printDeviceInfo();
+	contextManager->printDeviceInfo();
 }
 
 // Function to check and handle OpenCL errors
@@ -61,16 +67,20 @@ void SMA_Analyzer::checkErr(cl_int err, const char * name)
 	}
 }
 
+cl_int SMA_Analyzer::parseCSV(char *inputFile) {
+
+	parser = new ClParser(&context, deviceIDs, numDevices, selectedDevice);
+	parser->LoadFile(inputFile);
+	delete parser;
+	return 0;
+}
 
 
 // main function.  For each four sequential elements in an array, compute the average (mean) value using an OpenCL kernel
 void SMA_Analyzer::getAverage(int numElements, int * inputData, float **outputData) 
 {
-	cl_uint numDevices = 1;
-	deviceIDs = contextManager.getOptimalDevice();
-	context = *contextManager.getOptimalContext();
 
-	averager = new Average(&context, deviceIDs,numDevices);
+	averager = new Average(&context, deviceIDs,numDevices,selectedDevice);
 	averager->getAverage(numElements, inputData,outputData);
 
 	std::cout << (*outputData)[0] << std::endl;
@@ -78,3 +88,5 @@ void SMA_Analyzer::getAverage(int numElements, int * inputData, float **outputDa
 	delete averager;
 
 }
+
+
