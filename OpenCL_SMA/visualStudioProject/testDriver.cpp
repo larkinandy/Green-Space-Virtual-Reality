@@ -57,7 +57,7 @@ void testAverageTest() {
 int main(int argc, char** argv)
 {
 	SMA_Analyzer analyzer = SMA_Analyzer();
-	analyzer.parseCSV("TestData_OpenCL_SMA3.csv");
+	analyzer.parseCSV("TestData_OpenCL_SMA2.csv");
 	//testAverageTest();
 
 

@@ -39,9 +39,9 @@
     <ClInclude Include="testDriver.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{35B8C82D-953B-4628-B6C2-0865D6B63AE5}</ProjectGuid>
+    <ProjectGuid>{3CA24C3C-F1DA-44E1-91F8-2BE8E04DCA69}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>CapsBasic</RootNamespace>
+    <RootNamespace>OpenCL_SMA</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
     <ProjectName>OpenCL_SMA</ProjectName>
   </PropertyGroup>

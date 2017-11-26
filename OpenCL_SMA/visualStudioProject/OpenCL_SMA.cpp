@@ -70,7 +70,7 @@ void SMA_Analyzer::checkErr(cl_int err, const char * name)
 cl_int SMA_Analyzer::parseCSV(char *inputFile) {
 
 	parser = new ClParser(&context, deviceIDs, numDevices, selectedDevice);
-	parser->LoadFile(inputFile);
+	parser->parseFile(inputFile);
 	delete parser;
 	return 0;
 }

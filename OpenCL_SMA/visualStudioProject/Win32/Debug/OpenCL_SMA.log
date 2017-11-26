@@ -1,0 +1,9 @@
+﻿  clParser.cpp
+clParser.cpp(61): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(73): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(98): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(209): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(250): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(254): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(258): warning C4018: '<': signed/unsigned mismatch
+  OpenCL_SMA.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe

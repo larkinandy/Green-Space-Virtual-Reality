@@ -13,10 +13,9 @@ public:
 	ClParser();
 	ClParser(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices, cl_uint preferredDevice);
 	~ClParser();
-	cl_int getMetaData(ifstream * inFile, char *metaData);
-	cl_int LoadFile(char *inputFile);
+	void parseFile(char *inputFile);
 	char * getInputFile();
-
+	void printOutput();
 
 protected:
 
@@ -24,36 +23,36 @@ protected:
 
 private:
 	char * inputFile;
-	const cl_uint CSV_ROW_LENGTH = 600;
-	cl_uint TEXT_OFFSETS[2] = { 280 ,20 };	// number of characters in the location and tweet text variables
-	cl_uint numRecords = 0;
-	cl_uint numCols = 10;
-	int batchSize = 512;
-
-	std::vector<cl_int> timeQueues;
-	std::vector<cl_int> timeBuffers;
-	std::vector<cl_int> scoreQueues;
-	std::vector<cl_int> scoreBuffers;
-	std::vector<cl_int> textQueues;
-	std::vector<cl_int> textBuffers;
-
-	std::vector<cl_char*> textPtrs;
-	std::vector<cl_int *> timePtrs;
-	std::vector<cl_int*> scorePtrs;
-
-	std::vector<cl_int> unParsedBuffers;
-
 	char * unParsedRecords = NULL;
 	const cl_uint unParsedQueueNum = 0;
+	const cl_uint CSV_ROW_LENGTH = 600;
+	cl_uint TEXT_OFFSETS[2] = { 280 ,20 };	// number of characters in the location and tweet text variables
+	cl_uint numRecords, numCols, numBatches = 0;
+	cl_uint batchSize = 33;
+	const int NUM_TIME_VARS = 5;
+	const int NUM_SCORE_VARS = 3;
+	const int NUM_TEXT_VARS = 2;
 
-	int getHeaderInfo(char *metaData);
-	int processCSVBatch(ifstream *inFile, char * unParsedRecords, cl_uint batchNum);
-	void setupTimeKernel();
-	void allocateMemory(cl_uint numElements);
-	cl_int parseTimeVars();
+	std::vector<cl_mem> timeBuffers;
+	std::vector<cl_mem> scoreBuffers;
+	std::vector<cl_mem> envBuffers;
+	std::vector<cl_mem> textBuffers;
+	std::vector<cl_mem> unParsedBuffers;
+
+	const int memcpyCommandQueue = 0;
+	const int timeCommmandQueue = 1;
+	const int scoreCommandQueue = 2;
+	const int textCommandQueue = 3;
+
+	cl_uint loadMetaData(ifstream * inFile);
+	void processCSVBatch(ifstream *inFile, char * unParsedRecords, cl_uint batchNum);
+	void allocateMemory();
+	void parseVars(cl_uint numThreadsInBatch);
 	void releaseMemory();
-	void BuffersToHost(std::vector<cl_int*> ptrs, std::vector<cl_int> varQueues, std::vector<cl_int> varBuffers);
-	void parseVarCategory(std::vector<cl_int*> ptrs, std::vector<cl_int>*  varQueues, std::vector<cl_int>*  varBuffers, const char * funcName);
-	void setupKernel(const char * funcName, std::vector<cl_int*> ptrs, std::vector<cl_int> varBuffers);
+	void parseVarCategory(int numVars, int commandQueue, std::vector<cl_mem>*  varBuffers, const char * funcName, cl_uint numThreadsInBatch, cl_uint * textOffsets);
+	void parseVarCategory(int numVars, int queueNum, std::vector<cl_mem> * varBuffers, const char * funcName, cl_uint numThreadsInBatch);
+	void BuffersToHost(std::vector<cl_int*> ptrs, int commandQueue, std::vector<cl_mem> * varBuffers);
+	void BuffersToHost(std::vector<cl_char*> ptrs, int commandQueue, std::vector<cl_mem> * varBuffers);
 
+	void setupKernel(const char * funcName, int numVars, std::vector<cl_mem> varBuffers);
 };

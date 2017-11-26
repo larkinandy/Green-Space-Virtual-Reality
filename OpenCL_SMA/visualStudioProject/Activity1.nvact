@@ -1,6 +1,5 @@
 ﻿<Model DefinitionId="3a3ca3f4-7ba7-4c09-a182-6ba59bf12599" DisplayName="Analysis Activity" xmlns="clr-namespace:Ark.PropertyModel;assembly=Ark">
-    <Property Name="ActivityType" Value="SystemTrace" />
-    <Property Name="Application" Value="D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\CapsBasic.exe" />
+    <Property Name="Application" Value="D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe" />
     <Property Name="EnableCudaApiContextAttachDetach" Value="True" />
     <Property Name="EnableCudaApiContextManagement" Value="True" />
     <Property Name="EnableCudaApiD3D10Interop" Value="True" />
@@ -120,6 +119,5 @@
     <Property Name="EnableToolsExtResourceNaming" Value="True" />
     <Property Name="EnableToolsExtStartEndRangeTrace" Value="True" />
     <Property Name="ExtensionsToSynchronize" Value="*;" />
-    <Property Name="KillApplicationOnStop" Value="True" />
     <Property Name="WorkingDirectory" Value="D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\" />
 </Model>
