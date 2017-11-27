@@ -6,7 +6,8 @@
 
 using namespace std;
 
-class ClParser : DeviceBaseClass {
+class ClParser : DeviceBaseClass 
+{
 
 
 public:
@@ -27,17 +28,14 @@ private:
 	const cl_uint unParsedQueueNum = 0;
 	const cl_uint CSV_ROW_LENGTH = 600;
 	cl_uint TEXT_OFFSETS[2] = { 280 ,20 };	// number of characters in the location and tweet text variables
-	cl_uint numRecords, numCols, numBatches = 0;
-	cl_uint batchSize = 33;
 	const int NUM_TIME_VARS = 5;
 	const int NUM_SCORE_VARS = 3;
 	const int NUM_TEXT_VARS = 2;
-
-	std::vector<cl_mem> timeBuffers;
-	std::vector<cl_mem> scoreBuffers;
-	std::vector<cl_mem> envBuffers;
-	std::vector<cl_mem> textBuffers;
+	
 	std::vector<cl_mem> unParsedBuffers;
+	
+
+	parsedCSV csvFile;
 
 	const int memcpyCommandQueue = 0;
 	const int timeCommmandQueue = 1;
@@ -49,10 +47,19 @@ private:
 	void allocateMemory();
 	void parseVars(cl_uint numThreadsInBatch);
 	void releaseMemory();
-	void parseVarCategory(int numVars, int commandQueue, std::vector<cl_mem>*  varBuffers, const char * funcName, cl_uint numThreadsInBatch, cl_uint * textOffsets);
-	void parseVarCategory(int numVars, int queueNum, std::vector<cl_mem> * varBuffers, const char * funcName, cl_uint numThreadsInBatch);
-	void BuffersToHost(std::vector<cl_int*> ptrs, int commandQueue, std::vector<cl_mem> * varBuffers);
-	void BuffersToHost(std::vector<cl_char*> ptrs, int commandQueue, std::vector<cl_mem> * varBuffers);
+	
+	void parseTimeVars(cl_uint numThreadsInBatch, char * funcName);
+	void parseScoreVars(cl_uint numThreadsInBatch, char * funcName);
+	void parseTextVars(cl_uint numThreadsInBatch, char * funcName);
 
 	void setupKernel(const char * funcName, int numVars, std::vector<cl_mem> varBuffers);
+	void setupTimeKernel(const char * funcName, cl_uint numVars, cl_uint numThreadsInBatch);
+	void setupScoreKernel(const char * funcName, cl_uint numVars, cl_uint numThreadsInBatch);
+	void setupTextKernel(const char * funcName, cl_uint numVars, cl_uint numThreadsInBatch);
+
+
+
+	void BuffersToHost(cl_int * inputPtr, std::vector<cl_mem> *buffers, cl_uint queueNum);
+	void BuffersToHost(cl_char * inputPtr, std::vector<cl_mem> *buffers, cl_uint queueNum, const cl_uint offest);
+
 };

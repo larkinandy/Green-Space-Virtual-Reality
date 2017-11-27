@@ -8,10 +8,11 @@
 #include<chrono>
 #include <algorithm>
 #include <CL/cl.h>
+#include "parsedStruct.h"
 
 
-
-class DeviceBaseClass {
+class DeviceBaseClass 
+{
 
 public:
 	DeviceBaseClass(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices,cl_uint perferredDevice);
@@ -51,7 +52,7 @@ protected:
 	
 	void copyDataToHost(cl_uint queueNum, cl_mem bufferNum, cl_int * outputVals, cl_uint numElements);
 	void copyDataToHost(cl_uint queueNum, cl_mem bufferNum, cl_char * outputVals, cl_uint numElements);
-
+	void CleanupOps();
 
 	void copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, char * hostData, cl_uint numElements);
 	

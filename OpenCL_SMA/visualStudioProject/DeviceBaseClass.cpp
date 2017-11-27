@@ -36,7 +36,12 @@ DeviceBaseClass::~DeviceBaseClass()
 	free(numWorkItems);
 }
 
+void DeviceBaseClass::CleanupOps() {
 
+	releaseKernels();
+	releaseCommandQueues();
+	releaseProgram();
+}
 
 // load program and .cl file and build
 void DeviceBaseClass::createProgram(cl_uint numDevices, cl_device_id * deviceIDs,cl_uint deviceNum)
@@ -119,7 +124,7 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	errNum = clEnqueueWriteBuffer(
 		queues[queueNumber],
 		buffers[bufferNumber],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(int) * numElements,
 		(void*)hostData,
@@ -138,7 +143,7 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	errNum = clEnqueueWriteBuffer(
 		queues[queueNumber],
 		buffers[bufferNumber],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(float) * numElements,
 		(void*)hostData,
@@ -156,7 +161,7 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	errNum = clEnqueueWriteBuffer(
 		queues[queueNumber],
 		buffers[bufferNumber],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(char) * numElements,
 		(void*)hostData,
@@ -175,7 +180,7 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, cha
 	errNum = clEnqueueWriteBuffer(
 		queues[queueNumber],
 		*buffer,
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(char) * numElements,
 		(void*)hostData,
@@ -194,7 +199,7 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	errNum = clEnqueueWriteBuffer(
 		queues[queueNumber],
 		buffers[bufferNumber],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(char) * numElements,
 		(void*)hostData,
@@ -228,7 +233,7 @@ void DeviceBaseClass::enqeueKernel(cl_uint kernelNum, cl_uint numThreads, cl_uin
 		0,
 		NULL,
 		&event);
-
+	checkErr(errNum, "enqueueKernel");
 	events.push_back(event);
 
 }
@@ -284,7 +289,7 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum,cl_uint bufferNum, cl_floa
 	errNum = clEnqueueReadBuffer(
 		queues[queueNum],
 		buffers[bufferNum],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(cl_float)*numElements,
 		(void*)outputVals,
@@ -301,7 +306,7 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_uint bufferNum, cl_int
 	errNum = clEnqueueReadBuffer(
 		queues[queueNum],
 		buffers[bufferNum],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(cl_int)*numElements,
 		(void*)outputVals,
@@ -316,7 +321,7 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_int * o
 	errNum = clEnqueueReadBuffer(
 		queues[queueNum],
 		buffer,
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(cl_int)*numElements,
 		(void*)outputVals,
@@ -331,7 +336,7 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_uint bufferNum, cl_cha
 	errNum = clEnqueueReadBuffer(
 		queues[queueNum],
 		buffers[bufferNum],
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(char)*numElements,
 		(void*)outputVals,
@@ -346,7 +351,7 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_char * 
 	errNum = clEnqueueReadBuffer(
 		queues[queueNum],
 		buffer,
-		CL_FALSE,
+		CL_TRUE,
 		0,
 		sizeof(char)*numElements,
 		(void*)outputVals,

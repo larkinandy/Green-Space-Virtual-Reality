@@ -38,6 +38,9 @@
     <ClInclude Include="OpenCL_SMA.hpp" />
     <ClInclude Include="testDriver.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="parsedStruct.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3CA24C3C-F1DA-44E1-91F8-2BE8E04DCA69}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

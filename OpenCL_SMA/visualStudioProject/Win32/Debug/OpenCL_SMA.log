@@ -1,9 +1,13 @@
-﻿  clParser.cpp
-clParser.cpp(61): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(73): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(98): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(209): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(250): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(254): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(258): warning C4018: '<': signed/unsigned mismatch
+﻿  testDriver.cpp
+  DeviceBaseClass.cpp
+DeviceBaseClass.cpp(10): warning C4101: 'maxDimensions': unreferenced local variable
+DeviceBaseClass.cpp(108): warning C4996: 'clCreateCommandQueue': was declared deprecated
+  C:\Intel\OpenCL\sdk\include\CL/cl.h(1428): note: see declaration of 'clCreateCommandQueue'
+  clParser.cpp
+clParser.cpp(159): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(251): warning C4018: '<': signed/unsigned mismatch
+  ContextManager.cpp
+  OpenCL_SMA.cpp
+  Average.cpp
+  Generating Code...
   OpenCL_SMA.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe
