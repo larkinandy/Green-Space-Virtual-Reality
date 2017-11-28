@@ -180,8 +180,6 @@ void ClParser::releaseMemory()
 
 void ClParser::BuffersToHost(cl_int * inputPtr, std::vector<cl_mem> * buffers, cl_uint queueNum)
 {
-	cout << "batch size " << csvFile.batchSize;
-	cout << "num batches: " << csvFile.numBatches;
 	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches - 1; batchNum++)
 	{
 		copyDataToHost(queueNum, (*buffers)[batchNum], &(inputPtr[csvFile.batchSize*batchNum]), csvFile.batchSize);
@@ -195,8 +193,6 @@ void ClParser::BuffersToHost(cl_int * inputPtr, std::vector<cl_mem> * buffers, c
 
 void ClParser::BuffersToHost(cl_char * inputPtr, std::vector<cl_mem> * buffers, cl_uint queueNum, cl_uint textOffest)
 {
-	cout << "batch size " << csvFile.batchSize;
-	cout << "num batches: " << csvFile.numBatches;
 	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches - 1; batchNum++)
 	{
 		copyDataToHost(queueNum, (*buffers)[batchNum], &(inputPtr[csvFile.batchSize*batchNum*textOffest]), csvFile.batchSize*textOffest);
@@ -313,10 +309,7 @@ void  ClParser::parseFile(char *inputFile)
 	}*/
 	
 	releaseMemory();
-	if(debug) {printOutput();}
-
-
-
+	//if(debug) {printOutput();}
 	
 }
 

@@ -229,7 +229,7 @@ void DeviceBaseClass::enqeueKernel(cl_uint kernelNum, cl_uint numThreads, cl_uin
 		1,
 		NULL,
 		globalSize,
-		localSize,
+		NULL,
 		0,
 		NULL,
 		&event);
@@ -251,7 +251,7 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum,cl_uint kernelNum, cl_uint n
 		1,
 		NULL,
 		globalSize,
-		localSize,
+		NULL,
 		0,
 		NULL,
 		&event);
@@ -274,7 +274,7 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint 
 		1,
 		NULL,
 		globalSize,
-		localSize,
+		NULL,
 		1,
 		priorEvent,
 		&event);

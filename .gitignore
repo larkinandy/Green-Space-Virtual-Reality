@@ -78,3 +78,13 @@ OpenCL_SMA/Testing_Strategy/UE4_QA_Test/Content/StarterContent/
 OpenCL_SMA/visualStudioProject/TestData_OpenCL_SMA2.csv
 OpenCL_SMA/visualStudioProject/RCopy.csv
 OpenCL_SMA/visualStudioProject/RCopy2.csv
+OpenCL_SMA/visualStudioProject/TestData_OpenCL_SMA_100.csv
+OpenCL_SMA/visualStudioProject/TestData_R_1000000.csv
+OpenCL_SMA/visualStudioProject/TestData_R_100000.csv
+OpenCL_SMA/visualStudioProject/TestData_R_10000.csv
+OpenCL_SMA/visualStudioProject/TestData_R_1000.csv
+OpenCL_SMA/visualStudioProject/TestData_R_100.csv
+OpenCL_SMA/visualStudioProject/TestData_OpenCL_SMA_1000000.csv
+OpenCL_SMA/visualStudioProject/TestData_OpenCL_SMA_100000.csv
+OpenCL_SMA/visualStudioProject/TestData_OpenCL_SMA_10000.csv
+OpenCL_SMA/visualStudioProject/TestData_OpenCL_SMA_1000.csv

@@ -87,7 +87,7 @@ __kernel void parse_scores(__global char * inputData, __global int * envScore, _
 			social = social * 10 + (int)((inputData[currIndex]) - 48);
 			currIndex += 1;
 		}
-		socialScore = social;
+		socialScore[id] = social;
 		currIndex += 1;
 		while (inputData[currIndex] != ',')
 		{

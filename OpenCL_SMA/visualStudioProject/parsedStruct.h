@@ -10,7 +10,7 @@ struct parsedCSV
 	cl_uint numRecords;
 	cl_uint numVars;
 	cl_uint numBatches;
-	cl_uint batchSize = 1024;
+	cl_uint batchSize = 2048;
 	std::vector<cl_mem> year;
 	std::vector<cl_mem> month;
 	std::vector<cl_mem> day;

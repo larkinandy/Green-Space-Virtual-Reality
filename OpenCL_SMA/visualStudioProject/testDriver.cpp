@@ -56,9 +56,22 @@ void testAverageTest() {
 
 int main(int argc, char** argv)
 {
+	
+	
 	SMA_Analyzer analyzer = SMA_Analyzer();
-	analyzer.parseCSV("TestData_OpenCL_SMA2.csv");
+
+	// for measuring the elapsed time to completion
+	typedef std::chrono::high_resolution_clock Clock;
+	typedef std::chrono::milliseconds milliseconds;
+	Clock::time_point t0 = Clock::now();
+
+
+	analyzer.parseCSV("TestData_OpenCL_SMA_1000000.csv");
+
 	//testAverageTest();
+	Clock::time_point t1 = Clock::now();
+	milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
+	std::cout << "Time to completion: " << ms.count() << "ms\n" << std::endl;
 
 
 
