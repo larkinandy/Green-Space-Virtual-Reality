@@ -1,16 +1,15 @@
 #pragma once
 
 #include <vector>
-#include<chrono>
-#include <algorithm>
 #include <CL/cl.h>
 
+// struct for holding parsed CSV data.  one vector for each variable
 struct parsedCSV
 {
 	cl_uint numRecords;
 	cl_uint numVars;
 	cl_uint numBatches;
-	cl_uint batchSize = 2048;
+	cl_uint batchSize = 4096*2;
 	std::vector<cl_mem> year;
 	std::vector<cl_mem> month;
 	std::vector<cl_mem> day;
@@ -23,7 +22,7 @@ struct parsedCSV
 	std::vector<cl_mem> tweet;
 };
 
-
+// struct for holding derived statistics.  Once vector for each summary statistic
 struct summaryStats
 {
 

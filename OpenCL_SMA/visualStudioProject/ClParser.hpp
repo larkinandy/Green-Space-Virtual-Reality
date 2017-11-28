@@ -34,6 +34,7 @@ private:
 	
 	std::vector<cl_mem> unParsedBuffers;
 	
+	int newEventNum;
 
 	parsedCSV csvFile;
 
@@ -41,6 +42,7 @@ private:
 	const int timeCommmandQueue = 1;
 	const int scoreCommandQueue = 2;
 	const int textCommandQueue = 3;
+	cl_uint readEventNum;
 
 	cl_uint loadMetaData(ifstream * inFile);
 	void processCSVBatch(ifstream *inFile, char * unParsedRecords, cl_uint batchNum);

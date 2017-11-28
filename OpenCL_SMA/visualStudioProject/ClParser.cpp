@@ -43,6 +43,7 @@ cl_uint ClParser::loadMetaData(ifstream * inFile)
 
 void ClParser::setupKernel(const char * funcName, int numVars, std::vector<cl_mem> varBuffers) 
 {
+	
 	cl_kernel kernel = clCreateKernel(program, funcName, &errNum);
 	checkErr(errNum, "setup kernel");
 	errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
@@ -75,7 +76,7 @@ void ClParser::setupTimeKernel(const char * funcName, cl_uint numVars,cl_uint nu
 	errNum = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&csvFile.minute[csvFile.minute.size() - 1]);
 	checkErr(errNum, "setup kernel");
 	kernels.push_back(kernel);
-	enqeueKernel(timeCommmandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice);
+	enqeueKernel(timeCommmandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice, &events[newEventNum]);
 }
 
 
@@ -143,7 +144,6 @@ void ClParser::parseTextVars(cl_uint numThreadsInBatch, char * funcName)
 
 void ClParser::parseVars(cl_uint numThreadsInBatch)
 {
-
 	parseTimeVars(numThreadsInBatch, "parse_timestamp");
 	parseScoreVars(numThreadsInBatch, "parse_scores");
 	parseTextVars(numThreadsInBatch, "parse_text");
@@ -162,8 +162,11 @@ void ClParser::processCSVBatch(ifstream *inFile, char * unParsedRecords, cl_uint
 	}
 	
 	createBuffer(sizeof(cl_char), &unParsedBuffers, csvFile.batchSize*CSV_ROW_LENGTH, CL_MEM_READ_ONLY);
-	copyDataToBuffer(memcpyCommandQueue, &(unParsedBuffers[unParsedBuffers.size()-1]), &(unParsedRecords[minRecordNum*CSV_ROW_LENGTH]), (maxRecordNum - minRecordNum)*CSV_ROW_LENGTH);  // copy input data to device on a dedicated queue
+	
+	cl_event newEvent;
+	copyDataToBuffer(memcpyCommandQueue, &(unParsedBuffers[unParsedBuffers.size()-1]), &(unParsedRecords[minRecordNum*CSV_ROW_LENGTH]), (maxRecordNum - minRecordNum)*CSV_ROW_LENGTH, &newEvent);  // copy input data to device on a dedicated queue
 	cl_uint numThreadsInBatch = maxRecordNum - minRecordNum;
+	newEventNum = events.size() - 1;
 	parseVars(numThreadsInBatch);
 }
 

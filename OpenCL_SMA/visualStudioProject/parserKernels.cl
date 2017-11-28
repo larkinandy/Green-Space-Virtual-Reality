@@ -9,7 +9,7 @@ __kernel void parse_timestamp(const __global char * inputData, __global int * ye
 	
 	int timeVal = 0;
 	int multiplier = 1000;
-	int readInt;
+	int readInt;	
 	for (int index = 0; index < 4; index++)
 	{
 		readInt = (inputData[inputOffset*id + index]) - 48;
@@ -17,7 +17,7 @@ __kernel void parse_timestamp(const __global char * inputData, __global int * ye
 		multiplier /= 10;
 	}
 	year[id] = timeVal;
-
+	
 	timeVal = 0;
 	multiplier = 10;
 	for(int index = 5; index < 7; index ++) 

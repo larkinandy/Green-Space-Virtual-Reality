@@ -1,8 +1,4 @@
-﻿  Average.cpp
-  Generating Code...
-  Skipping... (no relevant changes detected)
-  testDriver.cpp
-  clParser.cpp
-  OpenCL_SMA.cpp
-  DeviceBaseClass.cpp
+﻿  clParser.cpp
+clParser.cpp(159): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(250): warning C4018: '<': signed/unsigned mismatch
   OpenCL_SMA.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe
