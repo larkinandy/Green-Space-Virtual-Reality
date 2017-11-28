@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 	Clock::time_point t0 = Clock::now();
 
 
-	analyzer.parseCSV("TestData_OpenCL_SMA_1000000.csv");
+	analyzer.parseCSV("TestData_OpenCL_SMA_100.csv");
 
 	//testAverageTest();
 	Clock::time_point t1 = Clock::now();
