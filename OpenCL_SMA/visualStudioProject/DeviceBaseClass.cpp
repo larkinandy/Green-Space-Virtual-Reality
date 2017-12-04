@@ -139,32 +139,17 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, cha
 	events.push_back(*event);
 }
 
-// execute all kernels
-void DeviceBaseClass::enqeueKernel(cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum) 
-{
-	cl_event event;
-	//cl_uint numLocalThreads = std::min(numThreads,numWorkItems[deviceNum]);
-	
-	size_t globalSize[1] = {numThreads };
-	//size_t localSize[1] = { numLocalThreads };
-	
-	errNum = clEnqueueNDRangeKernel(
-		queues[kernelNum], kernels[kernelNum], 1, NULL, globalSize, NULL, 0, NULL, &event);
-	checkErr(errNum, "enqueueKernel");
-	events.push_back(event);
-
-}
 
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum,cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum) 
 {
 	cl_event event;
 
-	cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum]/2) ;
+	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum]/2) ;
 	size_t globalSize[1] = { numThreads };
-	size_t localSize[1] = { numLocalThreads };
+	//size_t localSize[1] = { numLocalThreads };
 
-	errNum = clEnqueueNDRangeKernel( queues[queueNum], kernels[kernelNum], 1, NULL, globalSize,
-		NULL, 0, NULL, &event);
+	errNum = clEnqueueNDRangeKernel( queues[queueNum], kernels[kernelNum], 1, NULL, globalSize,NULL, 0, NULL, &event);
+		
 	checkErr(errNum, "enqueue kernel");
 	events.push_back(event);
 }
@@ -173,9 +158,23 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum,cl_uint kernelNum, cl_uint n
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum,cl_event * priorEvent)
 {
 	cl_event newEvent;
-	cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);
+	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);
 	size_t globalSize[1] = {numThreads };
-	size_t localSize[1] = { numLocalThreads };
+	//size_t localSize[1] = { numLocalThreads };
+	
+	errNum = clEnqueueNDRangeKernel(queues[queueNum], kernels[kernelNum], 1, NULL, globalSize, NULL, 1,
+		priorEvent, &newEvent);
+	checkErr(errNum, "enqueue kernel");
+	//events.push_back(newEvent);
+}
+
+
+void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint numThreads, cl_uint numLocal, cl_uint deviceNum, cl_event * priorEvent)
+{
+	cl_event newEvent;
+	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);
+	size_t globalSize[1] = { numThreads };
+	size_t localSize[1] = { numLocal};
 
 	errNum = clEnqueueNDRangeKernel(queues[queueNum], kernels[kernelNum], 1, NULL, globalSize, NULL, 1,
 		priorEvent, &newEvent);
@@ -184,32 +183,9 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint 
 }
 
 
-
-void DeviceBaseClass::copyDataToHost(cl_uint queueNum,cl_uint bufferNum, cl_float * outputVals, cl_uint numElements)
-{
-	errNum = clEnqueueReadBuffer( queues[queueNum], buffers[bufferNum], CL_FALSE, 0, sizeof(cl_float)*numElements,
-		(void*)outputVals, 0, NULL, NULL);
-	checkErr(errNum, "device to host");
-}
-
-
-void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_uint bufferNum, cl_int * outputVals, cl_uint numElements)
-{
-	errNum = clEnqueueReadBuffer(queues[queueNum], buffers[bufferNum], CL_FALSE, 0, sizeof(cl_int)*numElements,
-		(void*)outputVals, 0, NULL, NULL);
-	checkErr(errNum, "device to host");
-}
-
 void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_int * outputVals, cl_uint numElements)
 {
 	errNum = clEnqueueReadBuffer(queues[queueNum], buffer, CL_FALSE, 0, sizeof(cl_int)*numElements, 
-		(void*)outputVals, 0, NULL, NULL);
-	checkErr(errNum, "device to host");
-}
-
-void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_uint bufferNum, cl_char * outputVals, cl_uint numElements)
-{
-	errNum = clEnqueueReadBuffer(queues[queueNum], buffers[bufferNum], CL_FALSE, 0, sizeof(char)*numElements,
 		(void*)outputVals, 0, NULL, NULL);
 	checkErr(errNum, "device to host");
 }
@@ -220,8 +196,6 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_char * 
 		(void*)outputVals, 0, NULL, NULL);
 	checkErr(errNum, "device to host");
 }
-
-
 
 void DeviceBaseClass::releaseCommandQueues()
 {

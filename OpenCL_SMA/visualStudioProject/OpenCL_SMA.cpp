@@ -71,22 +71,7 @@ cl_int SMA_Analyzer::parseCSV(char *inputFile) {
 
 	parser = new ClParser(&context, deviceIDs, numDevices, selectedDevice);
 	parser->parseFile(inputFile);
-	delete parser;
+	//delete parser;
 	return 0;
 }
-
-
-// main function.  For each four sequential elements in an array, compute the average (mean) value using an OpenCL kernel
-void SMA_Analyzer::getAverage(int numElements, int * inputData, float **outputData) 
-{
-
-	averager = new Average(&context, deviceIDs,numDevices,selectedDevice);
-	averager->getAverage(numElements, inputData,outputData);
-
-	std::cout << (*outputData)[0] << std::endl;
-
-	delete averager;
-
-}
-
 

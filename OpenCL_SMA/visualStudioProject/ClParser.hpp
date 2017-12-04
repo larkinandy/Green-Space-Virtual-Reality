@@ -55,13 +55,13 @@ private:
 	void parseTextVars(cl_uint numThreadsInBatch, char * funcName);
 
 	void setupKernel(const char * funcName, int numVars, std::vector<cl_mem> varBuffers);
-	void setupTimeKernel(const char * funcName, cl_uint numVars, cl_uint numThreadsInBatch);
-	void setupScoreKernel(const char * funcName, cl_uint numVars, cl_uint numThreadsInBatch);
-	void setupTextKernel(const char * funcName, cl_uint numVars, cl_uint numThreadsInBatch);
-
-
+	void setupTimeKernel(const char * funcName, cl_uint numThreadsInBatch);
+	void setupScoreKernel(const char * funcName, cl_uint numThreadsInBatch);
+	void setupTextKernel(const char * funcName, cl_uint numThreadsInBatch);
 
 	void BuffersToHost(cl_int * inputPtr, std::vector<cl_mem> *buffers, cl_uint queueNum);
 	void BuffersToHost(cl_char * inputPtr, std::vector<cl_mem> *buffers, cl_uint queueNum, const cl_uint offest);
 
+	void printLineSearchDebug(cl_mem * lineBreaks);
+	void findLineBreaks(char * rawData, cl_mem * lineBreaks);
 };

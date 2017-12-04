@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Average.cpp" />
     <ClCompile Include="OpenCL_SMA.cpp" />
     <ClCompile Include="ContextManager.cpp" />
     <ClCompile Include="clParser.cpp" />
@@ -31,7 +30,6 @@
     <None Include="parserKernels.cl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Average.h" />
     <ClInclude Include="ContextManager.hpp" />
     <ClInclude Include="ClParser.hpp" />
     <ClInclude Include="DeviceBaseClass.hpp" />

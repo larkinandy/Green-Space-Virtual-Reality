@@ -24,36 +24,6 @@ void createInput(int numElements, int **dataset)
 }
 
 
-void testAverageTest() {
-
-	//_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF);
-
-	int * testData1 = NULL;
-	int *testData2 = NULL;
-	float * output1 = NULL;
-	float * output2 = NULL;
-
-	SMA_Analyzer analyzer = SMA_Analyzer();
-		createInput(16, &testData1);
-
-
-		analyzer.getAverage(16, testData1, &output1);
-
-		createInput(16, &testData2);
-		analyzer.getAverage(16, testData2, &output2);
-
-	printOutput(4, output2);
-
-	free(testData1);
-	free(testData2);
-	free(output1);
-	free(output2);
-
-	std::cout << "Program completed successfully" << std::endl;
-
-
-}
-
 int main(int argc, char** argv)
 {
 	
@@ -65,10 +35,8 @@ int main(int argc, char** argv)
 	typedef std::chrono::milliseconds milliseconds;
 	Clock::time_point t0 = Clock::now();
 
+	analyzer.parseCSV("TestData_OpenCL_SMA_10000b.csv");
 
-	analyzer.parseCSV("TestData_OpenCL_SMA_100.csv");
-
-	//testAverageTest();
 	Clock::time_point t1 = Clock::now();
 	milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
 	std::cout << "Time to completion: " << ms.count() << "ms\n" << std::endl;
