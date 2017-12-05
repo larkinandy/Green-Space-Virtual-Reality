@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <future>
+
 using namespace std;
 
 class ClParser : DeviceBaseClass 
@@ -33,6 +35,7 @@ private:
 	const int NUM_TEXT_VARS = 2;
 	
 	std::vector<cl_mem> unParsedBuffers;
+	std::vector<cl_mem> lineBreaks;
 	
 	int newEventNum;
 
@@ -42,26 +45,32 @@ private:
 	const int timeCommmandQueue = 1;
 	const int scoreCommandQueue = 2;
 	const int textCommandQueue = 3;
+
+	//cl_mem lineBreaks;
+
 	cl_uint readEventNum;
 
 	cl_uint loadMetaData(ifstream * inFile);
-	void processCSVBatch(ifstream *inFile, char * unParsedRecords, cl_uint batchNum);
+	void processCSVFile(ifstream * inFile, char * unParsedRecords);
 	void allocateMemory();
-	void parseVars(cl_uint numThreadsInBatch);
+	void parseVars(cl_uint numThreadsInBatch, cl_mem * lineBreaks,cl_int offsetIndex);
 	void releaseMemory();
 	
-	void parseTimeVars(cl_uint numThreadsInBatch, char * funcName);
-	void parseScoreVars(cl_uint numThreadsInBatch, char * funcName);
-	void parseTextVars(cl_uint numThreadsInBatch, char * funcName);
+	void parseTimeVars(cl_uint numThreadsInBatch, char * funcName, cl_mem * lineBreaks,cl_int startingIndex);
+	void parseScoreVars(cl_uint numThreadsInBatch, char * funcName,cl_mem * lineBreaks,cl_int startingIndex);
+	void parseTextVars(cl_uint numThreadsInBatch, char * funcName, cl_mem * lineBreaks,cl_int startingIndex);
 
 	void setupKernel(const char * funcName, int numVars, std::vector<cl_mem> varBuffers);
-	void setupTimeKernel(const char * funcName, cl_uint numThreadsInBatch);
-	void setupScoreKernel(const char * funcName, cl_uint numThreadsInBatch);
-	void setupTextKernel(const char * funcName, cl_uint numThreadsInBatch);
+	void setupTimeKernel(const char * funcName, cl_uint numThreadsInBatch, cl_mem * lineBreaks,cl_int startingIndex);
+	void setupScoreKernel(const char * funcName, cl_uint numThreadsInBatch,cl_mem * lineBreaks,cl_int startingIndex);
+	void setupTextKernel(const char * funcName, cl_uint numThreadsInBatch, cl_mem * lineBreaks, cl_int startingIndex);
 
 	void BuffersToHost(cl_int * inputPtr, std::vector<cl_mem> *buffers, cl_uint queueNum);
 	void BuffersToHost(cl_char * inputPtr, std::vector<cl_mem> *buffers, cl_uint queueNum, const cl_uint offest);
 
 	void printLineSearchDebug(cl_mem * lineBreaks);
-	void findLineBreaks(char * rawData, cl_mem * lineBreaks);
+	void findLineBreaks(cl_mem * lineBreaks, cl_int batchSize, cl_int * newIndex);
+
+
+	int twice(ifstream *inFile, char * unParsedData, cl_uint batchSize);
 };

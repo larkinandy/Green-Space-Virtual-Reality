@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 	typedef std::chrono::milliseconds milliseconds;
 	Clock::time_point t0 = Clock::now();
 
-	analyzer.parseCSV("TestData_OpenCL_SMA_10000b.csv");
+	analyzer.parseCSV("TestData_OpenCL_SMA_100.csv");
 
 	Clock::time_point t1 = Clock::now();
 	milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);

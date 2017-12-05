@@ -207,21 +207,25 @@ void DeviceBaseClass::releaseCommandQueues()
 			errNum = clReleaseCommandQueue(queues[queueIndex]);
 			checkErr(errNum, "command queue release");
 		}
+		queues.pop_back();
 	}
 
 
 }
 void DeviceBaseClass::releaseKernels()
 {
-	cl_uint numReleaes;
+	cl_uint numReleaes = 0;
+	cl_int releaseCount = 0;
 	for (cl_int kernelIndex = kernels.size() - 1; kernelIndex >= 0; kernelIndex--)
 	{
-		clGetKernelInfo(kernels[kernelIndex], CL_KERNEL_REFERENCE_COUNT, sizeof(cl_uint), &numReleaes, NULL);
-		for (cl_int releaseCount = numReleaes; releaseCount > 0; releaseCount--)
+ 		errNum = clGetKernelInfo(kernels[kernelIndex], CL_KERNEL_REFERENCE_COUNT, sizeof(cl_uint), &numReleaes, NULL);
+		checkErr(errNum, "get kernel info");
+		for (releaseCount = numReleaes+1; releaseCount > 1; releaseCount--)
 		{
 			errNum = clReleaseKernel(kernels[kernelIndex]);
-			checkErr(errNum, "release Kernel");
+			checkErr(errNum, "release kernel");
 		}
+		kernels.pop_back();
 	}
 }
 
@@ -239,6 +243,7 @@ void DeviceBaseClass::releaseBuffers()
 			errNum = clReleaseMemObject(buffers[bufferIndex]);
 			checkErr(errNum, "release Buffer");
 		}
+		buffers.pop_back();
 	}
 
 }
