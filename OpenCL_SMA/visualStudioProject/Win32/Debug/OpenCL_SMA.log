@@ -1,2 +1,10 @@
-﻿  testDriver.cpp
+﻿  OpenCL_SMA.cpp
+  Generating Code...
+  Compiling...
+  testDriver.cpp
+  clParser.cpp
+clParser.cpp(248): warning C4244: 'return': conversion from 'std::streamsize' to 'int', possible loss of data
+clParser.cpp(321): warning C4018: '<': signed/unsigned mismatch
+clParser.cpp(395): warning C4018: '<': signed/unsigned mismatch
+  Generating Code...
   OpenCL_SMA.vcxproj -> I:\GreenSpaceVirtualReality\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe

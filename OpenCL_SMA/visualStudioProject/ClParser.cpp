@@ -1,14 +1,22 @@
+/* ClParser.hpp
+* Header file for class that parses csv files on GPU devices using OpenCL
+* Author: Andrew Larkin
+* December 5, 2017
+*/
+
+
 #include "ClParser.hpp"
 
 
-ClParser::ClParser(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices, cl_uint preferredDevice) : DeviceBaseClass(contextPtr, deviceIDs, numDevices, preferredDevice)
+ClParser::ClParser(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices, cl_uint preferredDevice) : 
+	DeviceBaseClass(contextPtr, deviceIDs, numDevices, preferredDevice)
 {
 	deviceFunctionFile = "parserKernels.cl";
 }
 
-
 ClParser::~ClParser() 
 {
+	releaseMemory();
 }
 
 
@@ -16,124 +24,92 @@ ClParser::ClParser() :DeviceBaseClass()
 {
 }
 
+// get number of records, columns, and column header from top of CSV
+// note  that this metadata format is not common in csv files
 cl_uint ClParser::loadMetaData(ifstream * inFile)
 {
-	char * metaData = new char[CSV_ROW_LENGTH];
+	char * metaData = new char[csvFile.CSV_ROW_LENGTH];
 	
 	//get number of records 
-	inFile->getline(metaData, CSV_ROW_LENGTH, ',');
-	inFile->getline(metaData, CSV_ROW_LENGTH, ',');
+	inFile->getline(metaData, csvFile.CSV_ROW_LENGTH, ',');
+	inFile->getline(metaData, csvFile.CSV_ROW_LENGTH, ',');
 	csvFile.numRecords = stoi(metaData);
 
 	//get number of columns
-	inFile->getline(metaData, CSV_ROW_LENGTH, ',');
-	inFile->getline(metaData, CSV_ROW_LENGTH, ',');
+	inFile->getline(metaData, csvFile.CSV_ROW_LENGTH, ',');
+	inFile->getline(metaData, csvFile.CSV_ROW_LENGTH, ',');
 	csvFile.numVars = stoi(metaData);
 	
 	//get colunn headers
-	inFile->getline(metaData, CSV_ROW_LENGTH, '\n');
+	inFile->getline(metaData, csvFile.CSV_ROW_LENGTH, '\n');
 	delete metaData;
 
+	// if the number of records if less than the batch size, then the batch size should be 
+	// reduced
 	if (csvFile.numRecords < csvFile.batchSize) { csvFile.batchSize = csvFile.numRecords; }
 	csvFile.numBatches = (csvFile.numRecords + csvFile.batchSize - 1) / csvFile.batchSize;
 
 	return 0;
 }
 
-void ClParser::setupKernel(const char * funcName, int numVars, std::vector<cl_mem> varBuffers) 
+// create a kernel for parsing time variables and set kernel args
+void ClParser::setupTimeKernel(const char * funcName,cl_uint numThreadsInBatch)
 {
-	
+	int bufferIndex = csvFile.year.size() - 1;
 	cl_kernel kernel = clCreateKernel(program, funcName, &errNum);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
-	checkErr(errNum, "createKernelArg");
-	for (int ptrIndex = 0; ptrIndex < numVars; ptrIndex++)
-	{
-		errNum = clSetKernelArg(kernel, numVars - ptrIndex, sizeof(cl_mem), (void *)&varBuffers[varBuffers.size() - 1 - ptrIndex]);
-		checkErr(errNum, "setup kernel");
-	}
-	kernels.push_back(kernel);
-}
-
-
-
-
-void ClParser::setupTimeKernel(const char * funcName,cl_uint numThreadsInBatch,cl_mem * lineBreaks, cl_int startingIndex)
-{
-	cl_kernel kernel = clCreateKernel(program, funcName, &errNum);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
-	checkErr(errNum, "createKernelArg");
-	errNum = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&csvFile.year[csvFile.year.size()-1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&csvFile.month[csvFile.month.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&csvFile.day[csvFile.day.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&csvFile.hour[csvFile.hour.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&csvFile.minute[csvFile.minute.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 6, sizeof(cl_int), (void *)&numThreadsInBatch);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)lineBreaks);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 8, sizeof(cl_int), (void *)&startingIndex);
-	checkErr(errNum, "setup kernel");
+	errNum += clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&csvFile.year[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&csvFile.month[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&csvFile.day[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&csvFile.hour[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&csvFile.minute[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&lineBreaks[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 6, sizeof(cl_int), (void *)&numThreadsInBatch);
+	checkErr(errNum, "setup time kernel");
 	kernels.push_back(kernel);
 	enqeueKernel(timeCommmandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice,&events[events.size()-1]);
 }
 
-
-void ClParser::setupScoreKernel(const char * funcName, cl_uint numThreadsInBatch,cl_mem * lineBreaks,cl_int startingIndex)
+// create a kernel for parsing numerical, or score-related variables, and set args
+void ClParser::setupScoreKernel(const char * funcName, cl_uint numThreadsInBatch)
 {
+	int bufferIndex = csvFile.envScore.size() - 1;
 	cl_kernel kernel = clCreateKernel(program, funcName, &errNum);
 	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
-	checkErr(errNum, "createKernelArg");
-	errNum = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&csvFile.envScore[csvFile.envScore.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&csvFile.socialScore[csvFile.socialScore.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&csvFile.sentiment[csvFile.sentiment.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 4, sizeof(cl_int),(void*)&numThreadsInBatch);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 5, sizeof(cl_int), (void*)lineBreaks);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 6, sizeof(cl_int), (void*)&startingIndex);
-	checkErr(errNum, "setup kernel");
+	errNum += clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&csvFile.envScore[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&csvFile.socialScore[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&csvFile.sentiment[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 4, sizeof(cl_int),(void*)&numThreadsInBatch);
+	errNum += clSetKernelArg(kernel, 5, sizeof(cl_int), (void*)&lineBreaks[bufferIndex]);
 	kernels.push_back(kernel);
 	enqeueKernel(scoreCommandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice,&events[events.size()-1]);
 }
 
-
-
-void ClParser::setupTextKernel(const char * funcName, cl_uint numThreadsInBatch, cl_mem * lineBreaks,cl_int startingIndex)
+// create a kernel for parsing text variables in csv, and set args
+void ClParser::setupTextKernel(const char * funcName, cl_uint numThreadsInBatch)
 {
+	int bufferIndex = csvFile.tweet.size() - 1;
 	cl_kernel kernel = clCreateKernel(program, funcName, &errNum);
 	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
-	checkErr(errNum, "createKernelArg");
-	errNum = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&csvFile.tweet[csvFile.tweet.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&csvFile.location[csvFile.location.size() - 1]);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 3, sizeof(cl_int), (void*)&numThreadsInBatch);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 4, sizeof(cl_int), (void*)lineBreaks);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 5, sizeof(cl_int), (void*)&startingIndex);
+	errNum += clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&csvFile.tweet[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&csvFile.location[bufferIndex]);
+	errNum += clSetKernelArg(kernel, 3, sizeof(cl_int), (void*)&numThreadsInBatch);
+	errNum += clSetKernelArg(kernel, 4, sizeof(cl_int), (void*)&lineBreaks[bufferIndex]);
 	checkErr(errNum, "setup kernel");
 	kernels.push_back(kernel);
 	enqeueKernel(textCommandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice,&events[events.size()-1]);
+
 }
 
-
-
-void ClParser::parseTimeVars(cl_uint numThreadsInBatch, char * funcName, cl_mem * lineBreaks,cl_int startingIndex)
+// create buffer and setup a kernel for parsing time variables in the csv file
+void ClParser::parseTimeVars(cl_uint numThreadsInBatch, char * funcName)
 {
-	if (csvFile.year.size() <2)
+	// buffers are created for the first batch in multi-batch processing.  For follow up batches, regions in the first bufffer 
+	// are accessed using subbuffers.  At the end of the batch processing, all vals will be in the buffers created in the first 
+	// batch
+	if (csvFile.year.size() ==0)
 	{
 		createBuffer(sizeof(cl_int), &csvFile.year, csvFile.numRecords, CL_MEM_READ_WRITE);
 		createBuffer(sizeof(cl_int), &csvFile.month, csvFile.numRecords, CL_MEM_READ_WRITE);
@@ -144,7 +120,6 @@ void ClParser::parseTimeVars(cl_uint numThreadsInBatch, char * funcName, cl_mem 
 	else 
 	{
 		cl_buffer_region region = { csvFile.batchSize*csvFile.year.size(),numThreadsInBatch*sizeof(cl_int) };
-
 		cl_mem buffer = clCreateSubBuffer(csvFile.year[0], CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region,&errNum);
 		checkErr(errNum, "create time sub buffer");
 		csvFile.year.push_back(buffer);
@@ -161,11 +136,15 @@ void ClParser::parseTimeVars(cl_uint numThreadsInBatch, char * funcName, cl_mem 
 		checkErr(errNum, "create time sub buffer");
 		csvFile.minute.push_back(buffer);
 	}
-	setupTimeKernel(funcName, numThreadsInBatch,lineBreaks, startingIndex);
+	setupTimeKernel(funcName, numThreadsInBatch);
 }
 
-void ClParser::parseScoreVars(cl_uint numThreadsInBatch, char * funcName,cl_mem * lineBreaks,cl_int startingIndex)
+// create buffers and setup a kernel for parsing score related variables in a csv file
+void ClParser::parseScoreVars(cl_uint numThreadsInBatch, char * funcName)
 {
+	// buffers are created for the first batch in multi-batch processing.  For follow up batches, regions in the first bufffer 
+	// are accessed using subbuffers.  At the end of the batch processing, all vals will be in the buffers created in the first 
+	// batch
 	if (csvFile.envScore.size() == 0)
 	{
 		createBuffer(sizeof(cl_int), &csvFile.envScore, csvFile.numRecords, CL_MEM_READ_WRITE);
@@ -186,138 +165,91 @@ void ClParser::parseScoreVars(cl_uint numThreadsInBatch, char * funcName,cl_mem 
 		checkErr(errNum, "create score sub buffer");
 		csvFile.sentiment.push_back(buffer);
 	}
-	setupScoreKernel(funcName, numThreadsInBatch, lineBreaks,startingIndex);
+	setupScoreKernel(funcName, numThreadsInBatch);
 }
 
-void ClParser::parseTextVars(cl_uint numThreadsInBatch, char * funcName,cl_mem * lineBreaks,cl_int startingIndex)
+// create buffers and setup kernel args for parsing text vars in a csv file
+void ClParser::parseTextVars(cl_uint numThreadsInBatch, char * funcName)
 {
+	// buffers are created for the first batch in multi-batch processing.  For follow up batches, regions in the first bufffer 
+	// are accessed using subbuffers.  At the end of the batch processing, all vals will be in the buffers created in the first 
+	// batch
 	if (csvFile.tweet.size() == 0) 
 	{
-		createBuffer(sizeof(cl_char), &csvFile.tweet, csvFile.numRecords*TEXT_OFFSETS[0], CL_MEM_READ_WRITE);
-		createBuffer(sizeof(cl_char), &csvFile.location, csvFile.numRecords*TEXT_OFFSETS[1], CL_MEM_READ_WRITE);
-
+		createBuffer(sizeof(cl_char), &csvFile.tweet, csvFile.numRecords*csvFile.TEXT_OFFSETS[0], CL_MEM_READ_WRITE);
+		createBuffer(sizeof(cl_char), &csvFile.location, csvFile.numRecords*csvFile.TEXT_OFFSETS[1], CL_MEM_READ_WRITE);
 	}
 	else 
 	{
-		cl_buffer_region twitterRegion = { csvFile.batchSize*csvFile.tweet.size()*TEXT_OFFSETS[0],numThreadsInBatch * sizeof(cl_char)*TEXT_OFFSETS[0] };
+		cl_buffer_region twitterRegion = { csvFile.batchSize*csvFile.tweet.size()*csvFile.TEXT_OFFSETS[0],numThreadsInBatch * sizeof(cl_char)*csvFile.TEXT_OFFSETS[0] };
 		cl_mem buffer = clCreateSubBuffer(csvFile.tweet[0], CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &twitterRegion, &errNum);
 		checkErr(errNum, "create text sub buffer");
 		csvFile.tweet.push_back(buffer);
 
-		cl_buffer_region locationRegion = { csvFile.batchSize*csvFile.location.size()*TEXT_OFFSETS[1],numThreadsInBatch * sizeof(cl_char)*TEXT_OFFSETS[1] };
+		cl_buffer_region locationRegion = { csvFile.batchSize*csvFile.location.size()*csvFile.TEXT_OFFSETS[1],numThreadsInBatch * sizeof(cl_char)*csvFile.TEXT_OFFSETS[1] };
 		buffer = clCreateSubBuffer(csvFile.location[0], CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &locationRegion, &errNum);
 		checkErr(errNum, "create text sub buffer");
 		csvFile.location.push_back(buffer);
-
 	}
-	setupTextKernel(funcName, numThreadsInBatch, lineBreaks, startingIndex);
+	setupTextKernel(funcName, numThreadsInBatch);
 }
 
-
-
-
-void ClParser::parseVars(cl_uint numThreadsInBatch, cl_mem * lineBreaks, cl_int startingIndex)
+// parse all vars in a batch, one category at a time
+void ClParser::parseVars(cl_uint numThreadsInBatch)
 {
-	parseTimeVars(numThreadsInBatch, "parse_timestamp", lineBreaks, startingIndex);
-	parseScoreVars(numThreadsInBatch, "parse_scores",lineBreaks,startingIndex);
-	parseTextVars(numThreadsInBatch, "parse_text",lineBreaks,startingIndex);
-
+	parseTimeVars(numThreadsInBatch, "parse_timestamp");
+	parseScoreVars(numThreadsInBatch, "parse_scores");
+	parseTextVars(numThreadsInBatch, "parse_text");
 }
 
-void ClParser::findLineBreaks(cl_mem * lineBreaks, cl_int batchSize, cl_int * newIndex) {
-	
-	cl_int test = batchSize*CSV_ROW_LENGTH;
+// find all of the indices for newline characters in the csv file
+void ClParser::findLineBreaks(cl_mem * lineBreaks, cl_int batchSize, cl_int * newIndex) 
+{	
+	cl_uint maxValNum = batchSize*csvFile.CSV_ROW_LENGTH;
+	cl_uint offset = 250;					// starting stride between groups where indices 
+											// of positively identified newline characters will be stored
+	cl_uint groupSize = 25;					// number of threads to allocate for each stride group
+	cl_uint numRecords = 0;					// number of contiguous sorted records below index 0.
+	cl_uint numThreads = batchSize * 10;	// number of threads to allocate for entire dataset
+	*newIndex = 0;							// index of the  last new line element to process
 
+	// identify all newline characters, and send to the lowest unoccupied group index.
 	cl_kernel kernel = clCreateKernel(program, "new_line", &errNum);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
-	checkErr(errNum, "createKernelArg");
-	errNum = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)lineBreaks);
-	checkErr(errNum, "createKernelArg");
-	errNum = clSetKernelArg(kernel, 2, sizeof(cl_int), (void*)&test);
-	checkErr(errNum, "setup kernel");
+	errNum += clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&unParsedBuffers[unParsedBuffers.size() - 1]);
+	errNum += clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)lineBreaks);
 	kernels.push_back(kernel);
-	enqeueKernel(textCommandQueue, kernels.size() - 1, test, 250, preferredDevice, &events[events.size()-1]);
-	clWaitForEvents(events.size(), events.data());
-	clFinish(queues[textCommandQueue]);
-	*newIndex = 0;
-	cl_uint offset = 250;
-	cl_uint groupSize = 25;
-	cl_uint numRecords = 0;
-	cl_uint numThreads = batchSize*10;
-	clFinish(queues[textCommandQueue]);
-	
-	
-	cl_uint maxValNum = batchSize*CSV_ROW_LENGTH;
-	cl_kernel globalKerne3l = clCreateKernel(program, "collapseValsGlobal", &errNum);
-	checkErr(errNum, "setup kernel");
-	errNum = clSetKernelArg(globalKerne3l, 0, sizeof(cl_mem), (void *)lineBreaks);
-	checkErr(errNum, "createKernelArg");
-	errNum = clSetKernelArg(globalKerne3l, 2, sizeof(cl_int), (void*)&maxValNum);
-	checkErr(errNum, "setup kernel");
-	kernels.push_back(globalKerne3l);
-	while (*newIndex < batchSize - 1) // & offset < csvFile.numRecords*CSV_ROW_LENGTH + 1 / 2)
+	checkErr(errNum, "setup new_line kernel");
+	enqeueKernel(opQueue, kernels.size() - 1, maxValNum, 256, preferredDevice, &events[events.size()-1]);
+
+	// combine the two closest clusters of new line indices.  Repeat until the batchsize number of indices
+	// are contiguously below the 0 index
+	kernel = clCreateKernel(program, "collapse_vals_global", &errNum);
+	errNum += clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)lineBreaks);
+	kernels.push_back(kernel);
+	while (*newIndex < batchSize - 1)
 	{
-		errNum = clSetKernelArg(globalKerne3l, 1, sizeof(cl_int), (void*)&offset);
-		checkErr(errNum, "setup kernel");
-		errNum = clSetKernelArg(globalKerne3l, 3, sizeof(cl_int), (void*)&groupSize);
-		checkErr(errNum, "setup kernel");
-		kernels.push_back(globalKerne3l);
-		enqeueKernel(textCommandQueue, kernels.size() - 1, numThreads, 256, preferredDevice, &events[events.size() - 1]);
-	
-		offset = offset * 2;
-		groupSize = groupSize * 2;
-		clWaitForEvents(events.size(), events.data());
-	//	clFinish(queues[textCommandQueue]);
-		copyDataToHost(textCommandQueue, *lineBreaks, newIndex, 1);
-//		clFinish(queues[textCommandQueue]);
-//		cout << "numRecords: " << *newIndex << endl;
+		errNum += clSetKernelArg(kernel, 1, sizeof(cl_int), (void*)&offset);
+		errNum += clSetKernelArg(kernel, 2, sizeof(cl_int), (void*)&groupSize);
+		checkErr(errNum, "setup collapse_vals_global kernel");
+		enqeueKernel(opQueue, kernels.size() - 1, numThreads, 256, preferredDevice, &events[events.size() - 1]);
+		copyDataToHost(opQueue, *lineBreaks, newIndex, 1);
+		offset *= 2;
+		groupSize *= 2;
 	}
-	//copyDataToHost(textCommandQueue, *lineBreaks, tempResults, 1);
-	clEnqueueReadBuffer(queues[textCommandQueue], *lineBreaks, CL_TRUE, sizeof(cl_int)*batchSize, sizeof(cl_int), newIndex, 1, &events[events.size() - 1], NULL);
-	//cout << " new index " <<  *newIndex << endl;
-	clFinish(queues[textCommandQueue]);
-	clWaitForEvents(events.size(), events.data());
-	//releaseKernels();
-	if (debug) {
-	//	printLineSearchDebug(lineBreaks);
-	}
-
+	// get the index where the last new line character to process in this batch is located
+	clEnqueueReadBuffer(queues[opQueue], *lineBreaks, CL_TRUE, sizeof(cl_int)*batchSize, sizeof(cl_int), newIndex, 1, &events[events.size() - 1], NULL);
 }
 
-void ClParser::printLineSearchDebug(cl_mem * lineBreaks)
+// asynchronously read input data into host memory.  Allows for parallel processing of OpenCL-related host code while 
+// waiting for data reads
+int ClParser::asyncFileRead(ifstream *inFile, char * unParsedData, cl_uint batchSize) 
 {
-
-
-	int * debugPrint = (int*)malloc(sizeof(int)*csvFile.batchSize);
-
-	clFinish(queues[textCommandQueue]);
-
-
-
-	copyDataToHost(textCommandQueue, *lineBreaks, &(debugPrint[0]), csvFile.batchSize);
-
-
-	clFinish(queues[textCommandQueue]);
-
-	
-	for (int i = 0; i < 100; i++) {
-			std::cout << "tempResult " << debugPrint[i] << "  ";
-			std::cout << "index: " << i << endl;
-		
-		}
-		
-	
-	free(debugPrint);
-}
-
-int ClParser::twice(ifstream *inFile, char * unParsedData, cl_uint batchSize) {
-
-	inFile->read(unParsedData, batchSize*CSV_ROW_LENGTH);
+	inFile->read(unParsedData, batchSize*csvFile.CSV_ROW_LENGTH);
 	return inFile->gcount();
 }
 
-
+// Where most of the logic flow management occurs.  Responsible for 
+// handling async operations and parsing data in batches
 void ClParser::processCSVFile(ifstream *inFile, char * unParsedRecords)
 {
 	cl_uint batchSize = csvFile.batchSize;
@@ -325,122 +257,99 @@ void ClParser::processCSVFile(ifstream *inFile, char * unParsedRecords)
 	cl_int newIndex = 0;
 	cl_int copyIndex = 0;
 	future <int> futureVal;
-	bool stillReading = true;
-	futureVal = std::async(&ClParser::twice, this, inFile, &unParsedRecords[unParsedLocation], batchSize);
+	bool stillReading = true; 
+
+	// asynchronously read first batch of data while OpenCL creates a program
+	futureVal = std::async(&ClParser::asyncFileRead, this, inFile, &unParsedRecords[unParsedLocation], batchSize);
+	createProgram(1, deviceIDs, preferredDevice);
 	
-	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches; batchNum++) {
-
-
+	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches; batchNum++) 
+	{
+		createBuffer(sizeof(cl_int), &lineBreaks, batchSize*csvFile.CSV_ROW_LENGTH, CL_MEM_READ_WRITE);
+		createBuffer(sizeof(cl_char), &unParsedBuffers, batchSize*csvFile.CSV_ROW_LENGTH, CL_MEM_READ_ONLY);
 	
-			createBuffer(sizeof(cl_int), &lineBreaks, batchSize*CSV_ROW_LENGTH, CL_MEM_READ_WRITE);
-			createBuffer(sizeof(cl_char), &unParsedBuffers, batchSize*CSV_ROW_LENGTH, CL_MEM_READ_ONLY);
-
-
-		
-		if (stillReading) {
-			unParsedLocation += futureVal.get();
-			
-
-	
-
+		// wait until async read is compelte and access results.  Start new async read if there is still data 
+		// in the input dataset
+		if (stillReading) { unParsedLocation += futureVal.get(); }
+		if (!inFile->eof()) 
+		{
+			futureVal = async(&ClParser::asyncFileRead, this, inFile, &unParsedRecords[unParsedLocation], batchSize); 
 		}
+		else { stillReading = false; }
 
+		// copy input data to device on a dedicated queue
+		cl_event loadDataEvent;
+		copyDataToBuffer(opQueue, &(unParsedBuffers[unParsedBuffers.size() - 1]),
+			&unParsedRecords[copyIndex], batchSize*csvFile.CSV_ROW_LENGTH, &loadDataEvent);
+		clWaitForEvents(1, &loadDataEvent);
 
-				cl_event newEvent;
-				copyDataToBuffer(memcpyCommandQueue, &(unParsedBuffers[unParsedBuffers.size() - 1]), &unParsedRecords[copyIndex], batchSize*CSV_ROW_LENGTH, &newEvent);  // copy input data to device on a dedicated queue
-
-				clWaitForEvents(1, &newEvent);
-
-				if (!inFile->eof()) {
-					futureVal = std::async(&ClParser::twice, this, inFile, &unParsedRecords[unParsedLocation], batchSize);
-				}
-				else {
-					stillReading = false;
-				}
-
-
+		// important debug step! Test for unsorted output and missing values
+		findLineBreaks(&lineBreaks[lineBreaks.size() - 1], batchSize, &newIndex);
+		if (debug) { checkLineBreakConsistency(&lineBreaks[lineBreaks.size() - 1], batchSize, copyIndex, batchNum); }
+		copyIndex += newIndex + 1;
 		
-			
-		
-			
-
-				findLineBreaks(&lineBreaks[lineBreaks.size() - 1], batchSize, &newIndex);
-
-				/*
-				int * debugPrint = (int*)malloc(sizeof(int)*csvFile.batchSize*CSV_ROW_LENGTH);
-
-
-
-
-				copyDataToHost(textCommandQueue, lineBreaks[lineBreaks.size() - 1], &(debugPrint[0]), csvFile.batchSize*CSV_ROW_LENGTH);
-				clWaitForEvents(1, &events[events.size() - 1]);
-				clFinish(queues[textCommandQueue]);
-		/*		for (int i = 0; i < batchSize; i++) {
-					if (unParsedRecords[debugPrint[i] + copyIndex] != '\n') {
-						int a = debugPrint[i];
-						cout << "mismatch, index " << i + batchNum*batchSize << ", value " << debugPrint[i] + copyIndex << "," << endl << unParsedRecords[debugPrint[i] - 1 + copyIndex] << unParsedRecords[debugPrint[i] + copyIndex] << unParsedRecords[debugPrint[i] + 1 + copyIndex] << endl;
-					}
-					if (debugPrint[i] == 0) {
-						cout << "zero warning" << i << endl;
-					}
-				}
-				for (int i = 0; i < 10; i++) {
-					cout << debugPrint[i] << "why";
-					cout << debugPrint[i] - 10 << endl;
-
-
-
-				}
-
-
-				
-				free(debugPrint);
-
-
-
-
-				*/
-
-
-			
-			
-			copyIndex += newIndex + 1;
-	
-
-		parseVars(csvFile.batchSize, &lineBreaks[lineBreaks.size() - 1], copyIndex);
-
-
-	
-	
-		}
+		parseVars(csvFile.batchSize);
+	}
 }
 
 void ClParser::allocateMemory()
 {
-	unParsedRecords = (char*)malloc(sizeof(char)*csvFile.numRecords*CSV_ROW_LENGTH);
-
+	unParsedRecords = (char*)malloc(sizeof(char)*csvFile.numRecords*csvFile.CSV_ROW_LENGTH);
+	// todo: allocation for 1 million records takes almost 100ms.  Look into smaller size allocation, 
+	// repeatedly using a smaller set
 }
 
 void ClParser::releaseMemory()
 {
 	free(unParsedRecords);
+	// todo: look into asynchronously releasin buffers, as they are no longer influencing any
+	// other OpenCL operation after they return their results
+	releaseBuffers(&lineBreaks);
+	releaseBuffers(&unParsedBuffers);
 }
 
+// import debug operation.  Check for errors in finding new line segments and sorting data.  Thread race conditions
+// led to numerous debugs in previous builds.  Leads to signifciant slow down, so only use in debug mode.  NOTE:
+// if working correctly, the 0 index for each batch should fail all three tests.
+void ClParser::checkLineBreakConsistency(cl_mem * lineBreaks, cl_uint batchSize, cl_uint copyIndex, cl_uint batchNum)
+{
+	int * debugPrint = (int*)malloc(sizeof(int)*csvFile.batchSize*csvFile.CSV_ROW_LENGTH);
+	copyDataToHost(opQueue, *lineBreaks, &(debugPrint[0]), csvFile.batchSize*csvFile.CSV_ROW_LENGTH);
+	clWaitForEvents(1, &events[events.size() - 1]);
+	clFinish(queues[opQueue]);
+	for (int i = 1; i < 10; i++) { cout << (debugPrint[i]) << endl; }
+	for (int i = 1; i < batchSize; i++) 
+	{
+		// check all indices matches the new line character
+		if (unParsedRecords[debugPrint[i] + copyIndex] != '\n') 
+		{
+			cout << "mismatch, index " << i + batchNum*batchSize << ", value " << debugPrint[i] + copyIndex << "," << endl;
+			cout << unParsedRecords[debugPrint[i] - 1 + copyIndex]  << unParsedRecords[debugPrint[i] + copyIndex] 
+				<< unParsedRecords[debugPrint[i] + 1 + copyIndex] << endl;
+		}
+		// check for zeros (no data)
+		if (debugPrint[i] == 0) { cout << "zero warning" << i << endl; }
+		// check for sorted order
+		if (debugPrint[i] < debugPrint[i - 1]) { cout << "warning out of order element at index " << i << " upper val: " << debugPrint[i] << " Lower val: " << debugPrint[i-1] << endl; }
+	}
+	free(debugPrint);
+}
 
+// copy integer data from buffer to host device.  Abstracts away many of the details
 void ClParser::BuffersToHost(cl_int * inputPtr, std::vector<cl_mem> * buffers, cl_uint queueNum)
 {
-	
 	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches - 1; batchNum++)
 	{
 		copyDataToHost(queueNum, (*buffers)[batchNum], &(inputPtr[csvFile.batchSize*batchNum]), csvFile.batchSize);
 	}
 	// for final batch that may be truncated
 	int tempBatchSize = csvFile.numRecords - (csvFile.batchSize)*(csvFile.numBatches - 1);
-	cout << tempBatchSize << endl;
 	int batchNum = csvFile.numBatches - 1;
 	copyDataToHost(queueNum, (*buffers)[batchNum], &(inputPtr[csvFile.batchSize*batchNum]), tempBatchSize);
 }
 
+
+// copy character data from buffer to host device.  Abstracts away many of the details
 void ClParser::BuffersToHost(cl_char * inputPtr, std::vector<cl_mem> * buffers, cl_uint queueNum, cl_uint textOffest)
 {
 	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches - 1; batchNum++)
@@ -449,61 +358,41 @@ void ClParser::BuffersToHost(cl_char * inputPtr, std::vector<cl_mem> * buffers, 
 	}
 	// for final batch that may be truncated
 	int tempBatchSize = csvFile.numRecords - (csvFile.batchSize)*(csvFile.numBatches - 1);
-	cout << tempBatchSize << endl;
 	int batchNum = csvFile.numBatches - 1;
 	copyDataToHost(queueNum, (*buffers)[batchNum], &(inputPtr[csvFile.batchSize*batchNum*textOffest]), tempBatchSize*textOffest);
 }
 
-
-
+// print sample from parsed csv file and test values for consistency
 void ClParser::printOutput()
-{
-	clWaitForEvents(events.size(), events.data());
-	
+{	
 	cl_int * timePtrs[5];
-	for (int i = 0; i < 5; i++) 
+	for (int i = 0; i < 5; i++)
 	{
 		timePtrs[i] = (cl_int*)malloc(sizeof(cl_int)*csvFile.numRecords);
 	}
-
 	BuffersToHost(timePtrs[0], &csvFile.year, timeCommmandQueue);
 	BuffersToHost(timePtrs[1], &csvFile.month, timeCommmandQueue);
-
 	BuffersToHost(timePtrs[2], &csvFile.day, timeCommmandQueue);
-   BuffersToHost(timePtrs[3], &csvFile.hour, timeCommmandQueue);
+    BuffersToHost(timePtrs[3], &csvFile.hour, timeCommmandQueue);
 	BuffersToHost(timePtrs[4], &csvFile.minute, timeCommmandQueue);
-	
+	clFinish(queues[timeCommmandQueue]);
+
 	cl_int * sentPtr = (cl_int*)malloc(sizeof(cl_int)*csvFile.numRecords);
 	BuffersToHost(sentPtr, &csvFile.sentiment, scoreCommandQueue);
 	cl_int * envPtr = (cl_int*)malloc(sizeof(cl_int)*csvFile.numRecords);
 	BuffersToHost(envPtr, &csvFile.envScore, scoreCommandQueue);
 	cl_int * socialPtr = (cl_int*)malloc(sizeof(cl_int)*csvFile.numRecords);
 	BuffersToHost(socialPtr, &csvFile.socialScore, scoreCommandQueue);
-		clFinish(queues[timeCommmandQueue]);
-	cl_char * textPtr = (cl_char*)malloc(sizeof(cl_char)*csvFile.numRecords*TEXT_OFFSETS[1]);
-	BuffersToHost(textPtr, &csvFile.location, textCommandQueue, TEXT_OFFSETS[1]);
-	cl_char * tweetPtr = (cl_char*)malloc(sizeof(cl_char)*csvFile.numRecords*TEXT_OFFSETS[0]);
-	BuffersToHost(tweetPtr, &csvFile.tweet, textCommandQueue, TEXT_OFFSETS[0]);
-	
-	
+	clFinish(queues[scoreCommandQueue]);
 
-	for (int i = 0; i < csvFile.numRecords; i++) {
-		if (timePtrs[0][i] != 2016) {
-			cout << "err at index: " << i << ", value equals: " << timePtrs[0][i] << endl;
-			if (timePtrs[1][i] != 12) {
-				cout << "err at index: " << i << ", value equals: " << timePtrs[1][i] << endl;
+	cl_char * textPtr = (cl_char*)malloc(sizeof(cl_char)*csvFile.numRecords*csvFile.TEXT_OFFSETS[1]);
+	BuffersToHost(textPtr, &csvFile.location, textCommandQueue, csvFile.TEXT_OFFSETS[1]);
+	cl_char * tweetPtr = (cl_char*)malloc(sizeof(cl_char)*csvFile.numRecords*csvFile.TEXT_OFFSETS[0]);
+	BuffersToHost(tweetPtr, &csvFile.tweet, textCommandQueue, csvFile.TEXT_OFFSETS[0]);
+	clFinish(queues[textCommandQueue]);
 
-
-			}
-
-		}
-
-
-	}
-
-
-	//for (int i = csvFile.numRecords - 8; i < csvFile.numRecords; i++)
-	for(int i = 0; i < 10; i++)
+	// print out parsed values for the final 8 records in the dataset.  
+	for (int i = csvFile.numRecords - 8; i < csvFile.numRecords; i++)
 	{
 		cout << "year " << timePtrs[0][i] << ", month " << timePtrs[1][i] << ", day " << timePtrs[2][i] << ", hour "
 			<< timePtrs[3][i] << " ,minute " << timePtrs[4][i] << endl;
@@ -512,7 +401,7 @@ void ClParser::printOutput()
 		cout << "twitter text: ";
 		for (int j = 0; j < 280; j++)
 		{
-			cout << tweetPtr[j+i*TEXT_OFFSETS[0]];
+			cout << tweetPtr[j+i*csvFile.TEXT_OFFSETS[0]];
 		}
 		cout << endl;
 
@@ -526,24 +415,26 @@ void ClParser::printOutput()
 		cout << endl;
 	}
 	
+	// free locally allocated memorys
+
 	for (int timeIndex = 0; timeIndex < 5; timeIndex++) 
 	{
 		free(timePtrs[timeIndex]);
 	}
-
-	
 	free(sentPtr);
 	free(envPtr);
 	free(socialPtr);
 	free(textPtr);
 	free(tweetPtr);
 }
+
+// primary function called externally by other classes.
 void  ClParser::parseFile(char *inputFile)
 {
+	this->debug = true;
 	this->inputFile = inputFile;
 	ifstream inFile(inputFile);
 	loadMetaData(&inFile);
-	createProgram(1, deviceIDs, preferredDevice);
 	allocateMemory();
 
 	for (int queueNum = 0; queueNum < 4; queueNum++) 
@@ -551,28 +442,18 @@ void  ClParser::parseFile(char *inputFile)
 		createCommandQueue(preferredDevice);
 	}
 
-	//for (cl_uint batchNum = 0; batchNum < csvFile.numBatches; batchNum++)
-	//{
-	//	if (batchNum == 0) {
-			processCSVFile(&inFile, unParsedRecords);
-		//}
-	//}
-
+	processCSVFile(&inFile, unParsedRecords);
 	inFile.close();
-	
-//	if (debug) { printOutput(); }
 
+	clWaitForEvents(events.size(), events.data());
 
-	releaseMemory();
-
-	
+	if (debug) { printOutput(); }
 }
-
-
 
 
 char * ClParser::getInputFile()
 {
 	return inputFile;
-
 }
+
+// end of clParser.cpp

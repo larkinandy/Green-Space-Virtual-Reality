@@ -1,3 +1,8 @@
+/* ContextManager.cpp
+* Implementation file for class to identify and query OpenCL platforms and select best device
+* Author: Andrew Larkin
+* December 5, 2017 */
+
 #include "ContextManager.hpp"
 
 
@@ -8,7 +13,6 @@ Context_Manager::Context_Manager()
 		&selectedDevice, &numDevices, numPlatforms);
 	checkErr(errNum, "selectOptimalDevice");
 	setupContext(platformIDs, &context, &(deviceIDs[selectedDevice]), selectedPlatform, 1);
-
 }
 
 Context_Manager::~Context_Manager() 
@@ -16,47 +20,43 @@ Context_Manager::~Context_Manager()
 	free(deviceIDs);
 	releaseContext(context);
 	free(platformIDs);
-	cout << "destroying context manager" << endl;
-
+	if (debug) { cout << "destroying context manager" << endl; }
 }
 
 void Context_Manager::releaseDevices()
 {
-	// only needed if using subdevices
+	// only needed if using subdevices.  Reserve place for potential implementation later
 }
 
+//return device id for device previously determined to be optimal by the ContextManager
 void Context_Manager::getOptimalDevices(cl_device_id ** indeviceIDs, cl_uint * optimalDevices, cl_uint * numDevices)
 {
-	//return &(deviceIDs[selectedDevice]);
 	*indeviceIDs = deviceIDs;
 	*optimalDevices = this->selectedDevice;
 	*numDevices = this->numDevices;
 }
 
-
+// return platform id for platform previously determined to be optimal
 void Context_Manager::getOptimalPlatform(cl_platform_id * platformID)
 {
 	platformID = &(this->platformIDs[selectedPlatform]);
 }
 
-
+// return context created by manager 
 void Context_Manager::getOptimalContext(cl_context * context)
 {
 	*context = this->context;
 }
 
-
-
-
 // Function to check and handle OpenCL errors
 void Context_Manager::checkErr(cl_int err, const char * name)
 {
-	if (err != CL_SUCCESS) {
+	if (err != CL_SUCCESS) 
+	{
 		std::cerr << "ERROR: " << name << " (" << err << ")" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 }
-
 
 // identify platforms and choose first platform on list
 void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs)
@@ -75,6 +75,7 @@ void Context_Manager::getPlatformInfo(cl_platform_id ** platformIDs)
 		"clGetPlatformIDs");
 }
 
+// evaluate GPU devices on a platform and determine which GPU device has the best work group size
 void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_uint platformNum,
 	cl_uint * maxCompute, cl_uint *selectedPlatform, cl_uint * selectedDevice)
 {
@@ -108,11 +109,9 @@ void Context_Manager::getBestDeviceOnPlatform(cl_platform_id * platformIDs, cl_u
 		}
 		free(tempDeivceIDs);
 	}
-	
 }
 
-
-// identify devices and choose first OpenCL compatible device on list
+// evaluate GPU devices on all platforms and selecct platform and GPU with best work group size
 cl_int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_device_id ** deviceIDs,
 	cl_uint * selectedPlatform, cl_uint * selectedDevice, cl_uint * numDevices, cl_uint numPlatforms)
 {
@@ -143,6 +142,7 @@ cl_int Context_Manager::selectOptimalDevice(cl_platform_id * platformIDs, cl_dev
 	return 0;
 }
 
+// print device info for all devices in the associated context
 void Context_Manager::printDeviceInfo()
 {
 	for (cl_uint deviceIndex = 0; deviceIndex < numDevices; deviceIndex++)
@@ -151,6 +151,7 @@ void Context_Manager::printDeviceInfo()
 	}
 }
 
+// print select parameters for a GPU device
 void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 {
 	char buffer[1024];
@@ -159,7 +160,6 @@ void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 	cl_ulong global_mem_size;
 	{
 		std::cout << "properties for device number " << deviceNum << std::endl;
-
 		clGetDeviceInfo(deviceIDs[deviceNum], CL_DEVICE_NAME, sizeof(buffer), buffer, &size);
 		std::cout << "Selected Device: " << buffer << std::endl;
 		clGetDeviceInfo(deviceIDs[deviceNum], CL_DEVICE_VENDOR, sizeof(buffer), buffer, &size);
@@ -170,10 +170,8 @@ void Context_Manager::printDeviceInfo(cl_uint deviceNum)
 		std::cout << "Max work group units: " << max_work_size << std::endl;
 		clGetDeviceInfo(deviceIDs[deviceNum], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, &size);
 		std::cout << "Global memory size (mb) " << global_mem_size / (1024 * 1024) << std::endl << std::endl;
-
 	}
 }
-
 
 // create context and attach selected devices
 void Context_Manager::setupContext(cl_platform_id * platformIDs, cl_context * context, cl_device_id * deviceIDs, cl_uint platform, cl_uint numDevices)
@@ -218,3 +216,5 @@ void Context_Manager::releaseDevices(cl_device_id * deviceIDs, cl_uint numDevice
 	}
 	free(deviceIDs);
 }
+
+// end of ContextManager.cpp

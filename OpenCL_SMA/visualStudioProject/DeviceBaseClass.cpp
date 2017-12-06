@@ -1,3 +1,9 @@
+/* DeviceBaseClass.hpp
+* Implementation file for base class with boiler plate for OpenCL functions
+* Author: Andrew Larkin
+* December 5, 2017 */
+
+
 #include "DeviceBaseClass.hpp"
 
 DeviceBaseClass::DeviceBaseClass(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint numDevices, cl_uint preferredDevice)
@@ -62,6 +68,7 @@ void DeviceBaseClass::createProgram(cl_uint numDevices, cl_device_id * deviceIDs
 	}
 }
 
+//  multiple overriding functions for createBuffer to take different args and input datatypes
 
 void  DeviceBaseClass::createBuffer(cl_uint elemSize, std::vector<cl_mem> * varBuffers, cl_uint numElements, 
 	cl_mem_flags typeFlag)
@@ -72,7 +79,6 @@ void  DeviceBaseClass::createBuffer(cl_uint elemSize, std::vector<cl_mem> * varB
 	varBuffers->push_back(buffer);
 }
 
-
 void  DeviceBaseClass::createBuffer(cl_uint elemSize, cl_uint numElements, cl_mem_flags typeFlag)
 {
 	// create a single buffer to cover all the input data
@@ -81,9 +87,6 @@ void  DeviceBaseClass::createBuffer(cl_uint elemSize, cl_uint numElements, cl_me
 	buffers.push_back(buffer);
 }
 
-
-
-
 void DeviceBaseClass::createCommandQueue(cl_uint deviceNum) 
 {
 	cl_command_queue queue = clCreateCommandQueue(context, deviceIDs[deviceNum], 0, &errNum);
@@ -91,7 +94,8 @@ void DeviceBaseClass::createCommandQueue(cl_uint deviceNum)
 	queues.push_back(queue);
 }
 
-// copy data from device to the main buffer. 
+// multiple copyDataToBuffer functions with to allow a range of input variables and datatypes
+
 void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber, cl_int * hostData, cl_uint numElements)
 {
 	//Write input data
@@ -100,8 +104,6 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	checkErr(errNum, "host to device");
 }
 
-
-// copy data from device to the main buffer. 
 void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber, cl_float * hostData, cl_uint numElements)
 {
 	//Write input data
@@ -110,7 +112,6 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	checkErr(errNum, "host to device");
 }
 
-// copy data from device to the main buffer. 
 void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber, char * hostData, cl_uint numElements)
 {
 	//Write input data
@@ -119,7 +120,6 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_uint bufferNumber
 	checkErr(errNum, "host to device");
 }
 
-// copy data from device to the main buffer. 
 void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, char * hostData, cl_uint numElements)
 {
 	//Write input data
@@ -128,7 +128,6 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, cha
 	checkErr(errNum, "host to device");
 }
 
-// copy data from device to the main buffer. 
 void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, char * hostData,
 	cl_uint numElements, cl_event * event)
 {
@@ -139,12 +138,11 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, cha
 	events.push_back(*event);
 }
 
-
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum,cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum) 
 {
 	cl_event event;
 
-	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum]/2) ;
+	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum]/2) ;	// let program device # of local threads 
 	size_t globalSize[1] = { numThreads };
 	//size_t localSize[1] = { numLocalThreads };
 
@@ -154,11 +152,10 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum,cl_uint kernelNum, cl_uint n
 	events.push_back(event);
 }
 
-
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum,cl_event * priorEvent)
 {
 	cl_event newEvent;
-	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);
+	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);// let program device # of local threads 
 	size_t globalSize[1] = {numThreads };
 	//size_t localSize[1] = { numLocalThreads };
 	
@@ -172,16 +169,15 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint 
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint numThreads, cl_uint numLocal, cl_uint deviceNum, cl_event * priorEvent)
 {
 	cl_event newEvent;
-	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);
+	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum] / 2);// let program device # of local threads 
 	size_t globalSize[1] = { numThreads };
-	size_t localSize[1] = { numLocal};
+	//size_t localSize[1] = { numLocalThreads };
 
 	errNum = clEnqueueNDRangeKernel(queues[queueNum], kernels[kernelNum], 1, NULL, globalSize, NULL, 1,
 		priorEvent, &newEvent);
 	checkErr(errNum, "enqueue kernel");
 	//events.push_back(newEvent);
 }
-
 
 void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_int * outputVals, cl_uint numElements)
 {
@@ -197,21 +193,23 @@ void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_char * 
 	checkErr(errNum, "device to host");
 }
 
+/************* cleanup operations ************/
+
 void DeviceBaseClass::releaseCommandQueues()
 {
 	cl_uint numReleases;
 	for (cl_int queueIndex = queues.size()-1; queueIndex >=0; queueIndex--)
 	{
 		clGetCommandQueueInfo(queues[queueIndex], CL_QUEUE_REFERENCE_COUNT, sizeof(cl_uint), &numReleases, NULL);
-		for (cl_int releaseCount = numReleases; releaseCount > 0; releaseCount--) {
+		for (cl_int releaseCount = numReleases; releaseCount > 0; releaseCount--) 
+		{
 			errNum = clReleaseCommandQueue(queues[queueIndex]);
 			checkErr(errNum, "command queue release");
 		}
 		queues.pop_back();
 	}
-
-
 }
+
 void DeviceBaseClass::releaseKernels()
 {
 	cl_uint numReleaes = 0;
@@ -229,8 +227,6 @@ void DeviceBaseClass::releaseKernels()
 	}
 }
 
-
-
 void DeviceBaseClass::releaseBuffers()
 {
 	cl_uint numReleaes;
@@ -246,6 +242,21 @@ void DeviceBaseClass::releaseBuffers()
 		buffers.pop_back();
 	}
 
+}
+
+void DeviceBaseClass::releaseBuffers(std::vector<cl_mem> * buffersToRelease)
+{
+	cl_int numReleaes;
+	for (cl_int bufferIndex = buffersToRelease->size() - 1; bufferIndex >= 0; bufferIndex--)
+	{
+		errNum = clGetMemObjectInfo((*buffersToRelease)[bufferIndex], CL_MEM_REFERENCE_COUNT, sizeof(cl_int), &numReleaes, NULL);
+		checkErr(errNum, "release Buffer");
+		for (cl_int releaseCount = numReleaes; releaseCount > 0; releaseCount--)
+		{
+			errNum = clReleaseMemObject((*buffersToRelease)[bufferIndex]);
+			checkErr(errNum, "release Buffer");
+		}
+	}
 }
 
 void DeviceBaseClass::releaseProgram()
@@ -281,3 +292,5 @@ void DeviceBaseClass::checkErr(cl_int err, const char * name)
 		exit(EXIT_FAILURE);
 	}
 }
+
+// end of DeviceBaseClass.cpp
