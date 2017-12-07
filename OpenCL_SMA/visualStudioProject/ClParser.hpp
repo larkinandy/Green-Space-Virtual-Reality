@@ -24,6 +24,8 @@ class ClParser : DeviceBaseClass
 		void parseFile(char *inputFile);
 		char * getInputFile();
 		void printOutput();
+		void cleanup();
+	
 
 	protected:
 
@@ -42,13 +44,17 @@ class ClParser : DeviceBaseClass
 		const int timeCommmandQueue = 1;
 		const int scoreCommandQueue = 2;
 		const int textCommandQueue = 3;
+		
+		future <void> cleanupCheck;
 
 		//
 		cl_uint loadMetaData(ifstream * inFile);
 		void processCSVFile(ifstream * inFile, char * unParsedRecords);
 		void allocateMemory();
 		int asyncFileRead(ifstream *inFile, char * unParsedData, cl_uint batchSize);
-		void releaseMemory();
+		void releaseResults();
+		void releaseIntermediates();
+	
 	
 		void parseVars(cl_uint numThreadsInBatch);
 		void parseTimeVars(cl_uint numThreadsInBatch, char * funcName);

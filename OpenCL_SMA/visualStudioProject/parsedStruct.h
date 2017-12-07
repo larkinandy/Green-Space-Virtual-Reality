@@ -11,7 +11,7 @@
 // struct for holding parsed CSV data.  one vector for each variable
 struct parsedCSV
 {
-	const cl_uint CSV_ROW_LENGTH = 600;				// largely dependent on tweet length.				
+	const cl_uint CSV_ROW_LENGTH = 500;				// largely dependent on tweet length.				
 	const cl_uint TEXT_OFFSETS[2] = { 280 ,20 };	// number of characters in the location and tweet text variables
 	const int NUM_TIME_VARS = 5;
 	const int NUM_SCORE_VARS = 3;
@@ -35,7 +35,7 @@ struct parsedCSV
 // struct for holding derived statistics.  Once vector for each summary statistic
 struct summaryStats
 {
-	// todo: determine which statistics to derive.  Should this be a sperate file?  It will be used by a separate class(es) than the
+	// todo: determine which statistics to derive.  Should this be a separate file?  It will be used by a separate class(es) than the
 	// parsedCSV struct
 };
 

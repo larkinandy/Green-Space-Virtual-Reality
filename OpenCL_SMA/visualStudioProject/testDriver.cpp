@@ -16,11 +16,13 @@ int main(int argc, char** argv)
 	Clock::time_point t0 = Clock::now();
 
 	// call csv parser block 1 of the OpenCL_SMA project
-	analyzer.parseCSV("TestData_OpenCL_SMA_100000.csv");
+	analyzer.parseCSV("TestData_OpenCL_SMA_10000b.csv");
 
 	Clock::time_point t1 = Clock::now();
 	milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
 	std::cout << "Time to completion: " << ms.count() << "ms\n" << std::endl;
+	analyzer.cleanup();
+
 }
 
 // end of testDriver.cpp

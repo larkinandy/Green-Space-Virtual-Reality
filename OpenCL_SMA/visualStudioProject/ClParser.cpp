@@ -16,13 +16,69 @@ ClParser::ClParser(cl_context * contextPtr, cl_device_id * deviceIDs, cl_uint nu
 
 ClParser::~ClParser() 
 {
-	releaseMemory();
+	cleanupCheck.get();
 }
 
 
 ClParser::ClParser() :DeviceBaseClass() 
 {
 }
+
+
+void ClParser::allocateMemory()
+{
+	unParsedRecords = (char*)malloc(sizeof(char)*csvFile.numRecords*csvFile.CSV_ROW_LENGTH);
+	// todo: allocation for 1 million records takes almost 100ms.  Look into smaller size allocation, 
+	// repeatedly using a smaller set
+}
+
+
+
+// release OpenCL objects and memory
+void ClParser::cleanup()
+{
+	// todo: look into asynchronously releasing buffers, as they are no longer influencing any
+	// other OpenCL operation after they return their results
+	releaseResults();
+	/*releaseProgram();
+	releaseCommandQueues();
+	releaseKernels();
+	releaseEvents();
+	*/
+}
+
+// delete results.  Only run when results are no longer needed by any classes in the OpenCL program
+void ClParser::releaseResults()
+{
+	releaseBuffers(&csvFile.year);
+	releaseBuffers(&csvFile.hour);
+	releaseBuffers(&csvFile.day);
+	releaseBuffers(&csvFile.month);
+	releaseBuffers(&csvFile.minute);
+	releaseBuffers(&csvFile.envScore);
+	releaseBuffers(&csvFile.socialScore);
+	releaseBuffers(&csvFile.sentiment);
+	releaseBuffers(&csvFile.location);
+	releaseBuffers(&csvFile.tweet);
+}
+
+// delete intermediate products.  Call after completing parsing
+void ClParser::releaseIntermediates() 
+{
+	free(unParsedRecords);
+	releaseBuffers(&lineBreaks);
+	releaseBuffers(&unParsedBuffers);
+}
+
+
+
+char * ClParser::getInputFile()
+{
+	return inputFile;
+}
+
+// end of clParser.cpp
+
 
 // get number of records, columns, and column header from top of CSV
 // note  that this metadata format is not common in csv files
@@ -67,7 +123,7 @@ void ClParser::setupTimeKernel(const char * funcName,cl_uint numThreadsInBatch)
 	errNum += clSetKernelArg(kernel, 6, sizeof(cl_int), (void *)&numThreadsInBatch);
 	checkErr(errNum, "setup time kernel");
 	kernels.push_back(kernel);
-	enqeueKernel(timeCommmandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice,&events[events.size()-1]);
+	enqeueKernel(timeCommmandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice);
 }
 
 // create a kernel for parsing numerical, or score-related variables, and set args
@@ -83,7 +139,7 @@ void ClParser::setupScoreKernel(const char * funcName, cl_uint numThreadsInBatch
 	errNum += clSetKernelArg(kernel, 4, sizeof(cl_int),(void*)&numThreadsInBatch);
 	errNum += clSetKernelArg(kernel, 5, sizeof(cl_int), (void*)&lineBreaks[bufferIndex]);
 	kernels.push_back(kernel);
-	enqeueKernel(scoreCommandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice,&events[events.size()-1]);
+	enqeueKernel(scoreCommandQueue, kernels.size() - 1, numThreadsInBatch,preferredDevice);
 }
 
 // create a kernel for parsing text variables in csv, and set args
@@ -99,7 +155,7 @@ void ClParser::setupTextKernel(const char * funcName, cl_uint numThreadsInBatch)
 	errNum += clSetKernelArg(kernel, 4, sizeof(cl_int), (void*)&lineBreaks[bufferIndex]);
 	checkErr(errNum, "setup kernel");
 	kernels.push_back(kernel);
-	enqeueKernel(textCommandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice,&events[events.size()-1]);
+	enqeueKernel(textCommandQueue, kernels.size() - 1, numThreadsInBatch, preferredDevice);
 
 }
 
@@ -257,23 +313,23 @@ void ClParser::processCSVFile(ifstream *inFile, char * unParsedRecords)
 	cl_int newIndex = 0;
 	cl_int copyIndex = 0;
 	future <int> futureVal;
-	bool stillReading = true; 
+	bool stillReading = true;
 
 	// asynchronously read first batch of data while OpenCL creates a program
 	futureVal = std::async(&ClParser::asyncFileRead, this, inFile, &unParsedRecords[unParsedLocation], batchSize);
 	createProgram(1, deviceIDs, preferredDevice);
-	
-	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches; batchNum++) 
+
+	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches; batchNum++)
 	{
 		createBuffer(sizeof(cl_int), &lineBreaks, batchSize*csvFile.CSV_ROW_LENGTH, CL_MEM_READ_WRITE);
 		createBuffer(sizeof(cl_char), &unParsedBuffers, batchSize*csvFile.CSV_ROW_LENGTH, CL_MEM_READ_ONLY);
-	
-		// wait until async read is compelte and access results.  Start new async read if there is still data 
+
+		// wait until async read is complete and access results.  Start new async read if there is still data 
 		// in the input dataset
 		if (stillReading) { unParsedLocation += futureVal.get(); }
-		if (!inFile->eof()) 
+		if (!inFile->eof())
 		{
-			futureVal = async(&ClParser::asyncFileRead, this, inFile, &unParsedRecords[unParsedLocation], batchSize); 
+			futureVal = async(&ClParser::asyncFileRead, this, inFile, &unParsedRecords[unParsedLocation], batchSize);
 		}
 		else { stillReading = false; }
 
@@ -287,26 +343,12 @@ void ClParser::processCSVFile(ifstream *inFile, char * unParsedRecords)
 		findLineBreaks(&lineBreaks[lineBreaks.size() - 1], batchSize, &newIndex);
 		if (debug) { checkLineBreakConsistency(&lineBreaks[lineBreaks.size() - 1], batchSize, copyIndex, batchNum); }
 		copyIndex += newIndex + 1;
-		
+
 		parseVars(csvFile.batchSize);
 	}
+
 }
 
-void ClParser::allocateMemory()
-{
-	unParsedRecords = (char*)malloc(sizeof(char)*csvFile.numRecords*csvFile.CSV_ROW_LENGTH);
-	// todo: allocation for 1 million records takes almost 100ms.  Look into smaller size allocation, 
-	// repeatedly using a smaller set
-}
-
-void ClParser::releaseMemory()
-{
-	free(unParsedRecords);
-	// todo: look into asynchronously releasin buffers, as they are no longer influencing any
-	// other OpenCL operation after they return their results
-	releaseBuffers(&lineBreaks);
-	releaseBuffers(&unParsedBuffers);
-}
 
 // import debug operation.  Check for errors in finding new line segments and sorting data.  Thread race conditions
 // led to numerous debugs in previous builds.  Leads to signifciant slow down, so only use in debug mode.  NOTE:
@@ -415,7 +457,7 @@ void ClParser::printOutput()
 		cout << endl;
 	}
 	
-	// free locally allocated memorys
+	// free locally allocated memories
 
 	for (int timeIndex = 0; timeIndex < 5; timeIndex++) 
 	{
@@ -448,12 +490,5 @@ void  ClParser::parseFile(char *inputFile)
 	clWaitForEvents(events.size(), events.data());
 
 	if (debug) { printOutput(); }
+	cleanupCheck = std::async(&ClParser::releaseIntermediates,this);
 }
-
-
-char * ClParser::getInputFile()
-{
-	return inputFile;
-}
-
-// end of clParser.cpp

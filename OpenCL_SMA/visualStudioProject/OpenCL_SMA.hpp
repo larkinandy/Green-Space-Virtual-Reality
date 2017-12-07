@@ -19,6 +19,7 @@ public:
 	int getSelectedDevice();
 	void printDeviceInfo();
 	cl_int parseCSV(char *inputFilepath);
+	void cleanup();
 protected:
 
 

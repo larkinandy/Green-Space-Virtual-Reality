@@ -4,7 +4,6 @@
 * December 5, 2017 */
 
 #pragma once
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>

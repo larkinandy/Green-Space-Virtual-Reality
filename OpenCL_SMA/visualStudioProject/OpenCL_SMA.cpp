@@ -40,8 +40,8 @@ int SMA_Analyzer::getNumObs()
 
 SMA_Analyzer::~SMA_Analyzer() 
 {
-	delete contextManager;
-	cout << "destroying SMA Analyzer " << endl;
+	/*delete contextManager;
+	delete parser;*/
 }
 
 int SMA_Analyzer::getSelectedPlatform() 
@@ -75,3 +75,9 @@ cl_int SMA_Analyzer::parseCSV(char *inputFile) {
 	return 0;
 }
 
+void SMA_Analyzer::cleanup() 
+{
+	parser->cleanup();
+	delete parser;
+	delete contextManager;
+}

@@ -140,16 +140,15 @@ void DeviceBaseClass::copyDataToBuffer(cl_uint queueNumber, cl_mem * buffer, cha
 
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum,cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum) 
 {
-	cl_event event;
 
 	//cl_uint numLocalThreads = std::min(numThreads, numWorkItems[deviceNum]/2) ;	// let program device # of local threads 
 	size_t globalSize[1] = { numThreads };
 	//size_t localSize[1] = { numLocalThreads };
 
-	errNum = clEnqueueNDRangeKernel( queues[queueNum], kernels[kernelNum], 1, NULL, globalSize,NULL, 0, NULL, &event);
+	errNum = clEnqueueNDRangeKernel( queues[queueNum], kernels[kernelNum], 1, NULL, globalSize,NULL, 0, NULL, NULL);
 		
 	checkErr(errNum, "enqueue kernel");
-	events.push_back(event);
+	//events.push_back(event);
 }
 
 void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint numThreads, cl_uint deviceNum,cl_event * priorEvent)
@@ -162,7 +161,7 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint 
 	errNum = clEnqueueNDRangeKernel(queues[queueNum], kernels[kernelNum], 1, NULL, globalSize, NULL, 1,
 		priorEvent, &newEvent);
 	checkErr(errNum, "enqueue kernel");
-	//events.push_back(newEvent);
+	events.push_back(newEvent);
 }
 
 
@@ -176,7 +175,7 @@ void DeviceBaseClass::enqeueKernel(cl_uint queueNum, cl_uint kernelNum, cl_uint 
 	errNum = clEnqueueNDRangeKernel(queues[queueNum], kernels[kernelNum], 1, NULL, globalSize, NULL, 1,
 		priorEvent, &newEvent);
 	checkErr(errNum, "enqueue kernel");
-	//events.push_back(newEvent);
+	events.push_back(newEvent);
 }
 
 void DeviceBaseClass::copyDataToHost(cl_uint queueNum, cl_mem buffer, cl_int * outputVals, cl_uint numElements)
