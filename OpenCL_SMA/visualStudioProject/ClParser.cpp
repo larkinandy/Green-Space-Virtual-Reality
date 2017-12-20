@@ -318,7 +318,7 @@ void ClParser::processCSVFile(ifstream *inFile, char * unParsedRecords)
 	// asynchronously read first batch of data while OpenCL creates a program
 	futureVal = std::async(&ClParser::asyncFileRead, this, inFile, &unParsedRecords[unParsedLocation], batchSize);
 	createProgram(1, deviceIDs, preferredDevice);
-
+	
 	for (cl_uint batchNum = 0; batchNum < csvFile.numBatches; batchNum++)
 	{
 		createBuffer(sizeof(cl_int), &lineBreaks, batchSize*csvFile.CSV_ROW_LENGTH, CL_MEM_READ_WRITE);
@@ -345,8 +345,10 @@ void ClParser::processCSVFile(ifstream *inFile, char * unParsedRecords)
 		copyIndex += newIndex + 1;
 
 		parseVars(csvFile.batchSize);
+	
 	}
-
+	
+	releaseKernels();
 }
 
 
@@ -473,7 +475,7 @@ void ClParser::printOutput()
 // primary function called externally by other classes.
 void  ClParser::parseFile(char *inputFile)
 {
-	this->debug = true;
+	this->debug = false;
 	this->inputFile = inputFile;
 	ifstream inFile(inputFile);
 	loadMetaData(&inFile);

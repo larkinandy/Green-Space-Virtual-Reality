@@ -1,5 +1,2 @@
-﻿  clParser.cpp
-clParser.cpp(304): warning C4244: 'return': conversion from 'std::streamsize' to 'int', possible loss of data
-clParser.cpp(363): warning C4018: '<': signed/unsigned mismatch
-clParser.cpp(437): warning C4018: '<': signed/unsigned mismatch
-  OpenCL_SMA.vcxproj -> I:\GreenSpaceVirtualReality\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe
+﻿  testDriver.cpp
+  OpenCL_SMA.vcxproj -> D:\VirturalRealityGreenspace\OpenCL_SMA\visualStudioProject\Win32\Debug\OpenCL_SMA.exe
